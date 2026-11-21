@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SLOT BATTLE - Slot v8 (Full)</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f1220;
+      color: #e8eaf0;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .phone {
+      width: 375px;
+      height: 720px;
+      background: #15192b;
+      border-radius: 28px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      border: 2px solid #2a2f45;
+    }
+
+    .top-bar {
+      height: 52px;
+      background: #1c2135;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      font-size: 13px;
+      font-weight: 600;
+      border-bottom: 1px solid #2a2f45;
+      z-index: 10;
+      position: relative;
+    }
+
+    .top-bar span {
+      background: #252b42;
+      padding: 4px 10px;
+      border-radius: 12px;
+    }
+
+    .main-area {
+      height: calc(100% - 52px - 64px);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: filter 0.35s ease;
+    }
+
+    .main-area.dimmed {
+      filter: brightness(0.5);
+    }
+
+    .battle-zone {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(180deg, #1a1f35 0%, #12162a 100%);
+    }
+
+    .battle-placeholder {
+      text-align: center;
+      opacity: 0.65;
+    }
+
+    .battle-placeholder .icon { font-size: 42px; margin-bottom: 8px; }
+    .battle-placeholder p { font-size: 14px; color: #9aa3c0; }
+
+    .unit-board {
+      height: 90px;
+      background: #1a1f33;
+      border-top: 1px solid #2a2f45;
+      padding: 10px 12px;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      align-items: center;
+    }
+
+    .unit-board-label {
+      font-size: 11px;
+      color: #7a84a5;
+      writing-mode: vertical-rl;
+      margin-right: 4px;
+      letter-spacing: 1px;
+    }
+
+    .unit-card {
+      min-width: 62px;
+      height: 70px;
+      background: #252b42;
+      border-radius: 10px;
+      border: 1px solid #323a58;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      position: relative;
+      animation: unitIn 0.35s ease;
+    }
+
+    .unit-card .name {
+      font-size: 10px;
+      color: #9aa3c0;
+      margin-top: 2px;
+    }
+
+    .unit-card.new {
+      border-color: #7b5cff;
+      box-shadow: 0 0 10px rgba(123,92,255,0.45);
+    }
+
+    @keyframes unitIn {
+      from { transform: scale(0.5); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .bottom-bar {
+      height: 64px;
+      background: #1c2135;
+      border-top: 1px solid #2a2f45;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      position: relative;
+    }
+
+    .open-slot-btn {
+      background: linear-gradient(135deg, #5b6cff, #7b5cff);
+      color: white;
+      border: none;
+      padding: 12px 40px;
+      border-radius: 24px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(91,108,255,0.35);
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 25;
+    }
+    .overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .slot-panel {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 68%;
+      background: #1a1f35;
+      border-radius: 22px 22px 0 0;
+      transform: translateY(100%);
+      transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 -10px 36px rgba(0,0,0,0.5);
+    }
+    .slot-panel.open { transform: translateY(0); }
+
+    .panel-handle {
+      width: 36px; height: 4px;
+      background: #3a415c;
+      border-radius: 4px;
+      margin: 10px auto 4px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2px 18px 10px;
+      font-size: 13px;
+      color: #9aa3c0;
+    }
+
+    .close-btn {
+      background: #2a2f45;
+      border: none;
+      color: #c5cbe0;
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .slot-body {
+      display: flex;
+      padding: 0 12px 0 16px;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .slot-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      align-content: start;
+    }
+
+    .slot-cell {
+      aspect-ratio: 1;
+      background: #252b42;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      border: 2px solid #323a58;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+    }
+
+    .slot-cell.spinning {
+      animation: cellSpin 0.45s ease;
+    }
+
+    .slot-cell.matched {
+      border-color: #a78bfa;
+      box-shadow: 0 0 14px rgba(167,139,250,0.55);
+      transform: scale(1.04);
+    }
+
+    @keyframes cellSpin {
+      0% { transform: scale(1); }
+      35% { transform: scale(0.82) rotate(-8deg); }
+      100% { transform: scale(1); }
+    }
+
+    /* 사이드 슬라이드 바 - 위에서 아래로 */
+    .slide-bar-wrap {
+      width: 52px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .slide-label {
+      font-size: 11px;
+      color: #7a84a5;
+      writing-mode: vertical-rl;
+      letter-spacing: 2px;
+    }
+
+    .slide-track {
+      width: 36px;
+      height: 180px;
+      background: #12162a;
+      border-radius: 20px;
+      border: 2px solid #2a2f45;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide-fill {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 0%;
+      background: linear-gradient(180deg, #5b6cff, #7b5cff);
+      border-radius: 16px 16px 0 0;
+      transition: height 0.05s linear;
+    }
+
+    .slide-thumb {
+      position: absolute;
+      left: 3px; right: 3px;
+      height: 42px;
+      background: #e8eaf0;
+      border-radius: 14px;
+      top: 4px;          /* 기본 위치: 위쪽 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #1a1f35;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      cursor: grab;
+      touch-action: none;
+      transition: top 0.05s linear;
+    }
+
+    .slide-thumb:active { cursor: grabbing; }
+
+    .slide-hint {
+      font-size: 10px;
+      color: #5a6480;
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    .result-area {
+      padding: 10px 16px 16px;
+      min-height: 70px;
+    }
+
+    .spin-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #9aa3c0;
+      margin-bottom: 8px;
+    }
+
+    .spin-info strong { color: #e8eaf0; }
+
+    .summon-log {
+      font-size: 13px;
+      color: #c4b5fd;
+      min-height: 20px;
+      text-align: center;
+    }
+
+    .summon-log.success {
+      animation: logPop 0.4s ease;
+    }
+
+    @keyframes logPop {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .bottom-bar { gap: 10px; }
+    .open-slot-btn { padding: 12px 26px; }
+    .start-btn {
+      background: #2a2f45; color: #e8eaf0; border: 1px solid #3a415c;
+      padding: 12px 22px; border-radius: 24px; font-size: 15px; font-weight: 700; cursor: pointer;
+    }
+    .start-btn:disabled { opacity: 0.45; cursor: default; }
+    .battle-zone { position: relative; flex-direction: column; }
+    .field { flex: 1; width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0 14px; }
+    .side { width: 46%; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-content: center; }
+    .actor { width: 44px; text-align: center; }
+    .actor .ico { font-size: 26px; transition: transform 0.1s; }
+    .hp { height: 4px; background: #12162a; border-radius: 2px; overflow: hidden; margin-bottom: 2px; }
+    .hp i { display: block; height: 100%; background: #4ade80; }
+    .foe .hp i { background: #f87171; }
+    .ally.hit .ico { transform: translateX(-5px); filter: brightness(2); }
+    .foe.hit .ico { transform: translateX(5px); filter: brightness(2); }
+    .battle-msg { font-size: 12px; color: #9aa3c0; text-align: center; padding: 8px 14px 12px; min-height: 40px; }
+    .unit-card { animation: none; }
+    .unit-card.new { animation: unitIn 0.35s ease; }
+
+    .slot-cell { cursor: pointer; }
+    .slot-cell.rolling { filter: blur(1.5px); border-color: #5b6cff; }
+    .unit-card { cursor: pointer; }
+    .unit-card.sel { border-color: #fbbf24; box-shadow: 0 0 10px rgba(251,191,36,0.5); }
+    .unit-card .lv { font-size: 9px; color: #fbbf24; min-height: 11px; }
+
+    .top-bar { padding: 0 8px; font-size: 12px; }
+    .top-bar span { padding: 4px 8px; }
+    .top-bar span span { padding: 0; background: none; border-radius: 0; }
+    .shop-btn { width: 46px; height: 46px; border-radius: 50%; border: 1px solid #3a415c; background: #252b42; font-size: 20px; cursor: pointer; }
+    .shop-tabs { display: flex; gap: 8px; padding: 0 16px 8px; }
+    .tab { flex: 1; padding: 8px; border-radius: 10px; border: 1px solid #323a58; background: #252b42; color: #9aa3c0; font-weight: 700; font-size: 13px; cursor: pointer; }
+    .tab.on { background: #5b6cff; color: #fff; border-color: #5b6cff; }
+    .shop-msg { font-size: 12px; color: #c4b5fd; text-align: center; min-height: 18px; padding: 0 16px 6px; }
+    .shop-list { flex: 1; overflow-y: auto; padding: 0 16px 12px; display: flex; flex-direction: column; gap: 8px; }
+    .shop-row { display: flex; align-items: center; gap: 10px; background: #252b42; border: 1px solid #323a58; border-radius: 12px; padding: 10px 12px; }
+    .shop-row .info { flex: 1; font-size: 13px; }
+    .shop-row .info small { display: block; color: #7a84a5; font-size: 11px; margin-top: 2px; }
+    .buy { background: #7b5cff; color: #fff; border: none; border-radius: 16px; padding: 8px 12px; font-weight: 700; font-size: 13px; cursor: pointer; min-width: 68px; }
+    .buy:disabled { opacity: 0.4; cursor: default; }
+    .inf { position: absolute; top: -2px; right: -2px; padding: 4px 6px; font-size: 10px; font-style: normal; color: #7a84a5; }
+    .lk { position: absolute; top: 2px; left: 4px; font-size: 9px; font-style: normal; }
+    .result-screen { position: absolute; inset: 0; z-index: 40; background: rgba(0,0,0,0.72); display: none; align-items: center; justify-content: center; }
+    .result-screen.show { display: flex; }
+    .rs-card { background: #1a1f35; border: 1px solid #3a415c; border-radius: 18px; padding: 24px 28px; text-align: center; }
+    .rs-card h2 { margin-bottom: 10px; } .rs-card p { color: #9aa3c0; font-size: 13px; margin-bottom: 16px; line-height: 1.6; }
+    .fx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+    .pop { position: absolute; font-weight: 800; font-size: 14px; animation: popUp 0.7s ease-out forwards; text-shadow: 0 1px 3px #000; }
+    @keyframes popUp { to { transform: translateY(-30px); opacity: 0; } }
+    .tab { font-size: 12px; padding: 8px 4px; }
+    .rs-card .shop-list { min-width: 250px; }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="top-bar">
+      <span>💰 <span id="gold">1250</span></span>
+      <span>Wave <span id="wave">1</span></span>
+      <span>🏰 <span id="baseHp">100</span></span>
+      <span>유닛 <span id="unitCount">0</span>/<span id="maxUnits">5</span></span>
+      <span>💎 <span id="ruby">0</span></span>
+    </div>
+
+    <div class="main-area" id="mainArea">
+      <div class="battle-zone">
+        <div class="field" id="field"></div>
+        <div class="battle-msg" id="battleMsg"></div>
+        <div class="fx" id="fx"></div>
+      </div>
+
+      <div class="unit-board" id="unitBoard">
+        <div class="unit-board-label">BOARD</div>
+      </div>
+    </div>
+
+    <div class="bottom-bar">
+      <button class="open-slot-btn" id="openBtn">슬롯 열기</button>
+      <button class="start-btn" id="startBtn">▶ 웨이브 시작</button>
+      <button class="shop-btn" id="shopBtn">🛒</button>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+
+    <div class="slot-panel shop-panel" id="shopPanel">
+      <div class="panel-handle"></div>
+      <div class="panel-header"><span>SHOP · 💎 <b id="rubyShop">0</b></span><button class="close-btn" id="shopClose">✕</button></div>
+      <div class="shop-tabs">
+        <button class="tab on" data-tab="items">아이템</button>
+        <button class="tab" data-tab="upg">업그레이드</button>
+        <button class="tab" data-tab="dex">도감</button>
+      </div>
+      <div class="shop-msg" id="shopMsg"></div>
+      <div class="shop-list" id="shopList"></div>
+    </div>
+
+    <div class="slot-panel shop-panel" id="detailPanel">
+      <div class="panel-handle"></div>
+      <div class="panel-header"><span>UNIT DETAIL</span><button class="close-btn" id="detailClose">✕</button></div>
+      <div class="shop-msg" id="detailMsg"></div>
+      <div class="shop-list" id="detailBody"></div>
+    </div>
+
+    <div class="result-screen" id="resultScreen">
+      <div class="rs-card"><h2>GAME OVER</h2><p id="rsText"></p><button class="start-btn" id="rsBtn">다시 시작</button> <button class="start-btn" id="rsLobby">로비</button></div>
+    </div>
+
+    <div class="result-screen" id="coreScreen">
+      <div class="rs-card"><h2>Core 선택</h2><p>이번 판의 규칙을 바꿔요</p><div id="coreList" class="shop-list"></div></div>
+    </div>
+
+    <div class="result-screen show" id="lobby">
+      <div class="rs-card"><h2>🎰 SLOT BATTLE</h2><p id="lbText"></p><button class="start-btn" id="lbStart">게임 시작</button></div>
+    </div>
+
+    <div class="slot-panel" id="slotPanel">
+      <div class="panel-handle"></div>
+      <div class="panel-header">
+        <span>SLOT MACHINE</span>
+        <button class="close-btn" id="closeBtn">✕</button>
+      </div>
+
+      <div class="slot-body">
+        <div class="slot-grid" id="slotGrid">
+          <div class="slot-cell" data-idx="0">🗡️</div>
+          <div class="slot-cell" data-idx="1">🏹</div>
+          <div class="slot-cell" data-idx="2">🔮</div>
+          <div class="slot-cell" data-idx="3">🗡️</div>
+          <div class="slot-cell" data-idx="4">🛡️</div>
+          <div class="slot-cell" data-idx="5">🏹</div>
+          <div class="slot-cell" data-idx="6">🔮</div>
+          <div class="slot-cell" data-idx="7">🗡️</div>
+          <div class="slot-cell" data-idx="8">🏹</div>
+        </div>
+
+        <!-- 사이드 슬라이드 바 : 위에서 아래로 -->
+        <div class="slide-bar-wrap">
+          <div class="slide-label">PULL</div>
+          <div class="slide-track" id="slideTrack">
+            <div class="slide-fill" id="slideFill"></div>
+            <div class="slide-thumb" id="slideThumb">↓</div>
+          </div>
+          <div class="slide-hint">아래로<br>내리세요</div>
+        </div>
+      </div>
+
+      <div class="result-area">
+        <div class="spin-info">
+          <div>비용 <strong id="costEl">100</strong></div>
+          <div>남은 횟수 <strong id="remainSpin">5</strong></div>
+        </div>
+        <div class="summon-log" id="summonLog">슬라이드 바를 아래로 내려 스핀하세요</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SPIN_COST = 100, NUDGE_COST = 50, MAX_UNITS = 5, MAX_LV = 15;
+
+    // 심볼 = 유닛 원형 데이터 (hp / atk / spd = 공격 간격(초))
+    const SYMBOLS = [
+      { icon: '🗡️', name: 'Warrior', weight: 22, hp: 60,  atk: 8,  spd: 1.0 },
+      { icon: '🏹', name: 'Archer',  weight: 22, hp: 35,  atk: 10, spd: 0.8 },
+      { icon: '🛡️', name: 'Guard',   weight: 18, hp: 100, atk: 4,  spd: 1.2 },
+      { icon: '🔮', name: 'Mage',    weight: 16, hp: 30,  atk: 14, spd: 1.5 },
+      { icon: '🐴', name: 'Cavalry', need: 3, weight: 12, hp: 70,  atk: 12, spd: 1.0 },
+      { icon: '⭐', name: 'Special', need: 6, weight: 10, hp: 50,  atk: 16, spd: 1.0 },
+    ];
+
+    const PAYLINES = [
+      [0,1,2], [3,4,5], [6,7,8],
+      [0,3,6], [1,4,7], [2,5,8],
+      [0,4,8], [2,4,6]
+    ];
+
+    // 게임 상태는 한 객체로 관리 (phase: prep / fight / over)
+    const G = { gold: 0, spins: 0, wave: 1, baseHp: 100, phase: 'prep', spinning: false, units: [], enemies: [] };
+
+    const openBtn = document.getElementById('openBtn');
+    const closeBtn = document.getElementById('closeBtn');
+    const slotPanel = document.getElementById('slotPanel');
+    const overlay = document.getElementById('overlay');
+    const mainArea = document.getElementById('mainArea');
+    const cells = document.querySelectorAll('.slot-cell');
+    const unitBoard = document.getElementById('unitBoard');
+    const summonLog = document.getElementById('summonLog');
+    const goldEl = document.getElementById('gold');
+    const unitCountEl = document.getElementById('unitCount');
+    const remainSpinEl = document.getElementById('remainSpin');
+
+    const slideTrack = document.getElementById('slideTrack');
+    const slideThumb = document.getElementById('slideThumb');
+    const slideFill = document.getElementById('slideFill');
+
+    function openPanel() {
+      slotPanel.classList.add('open');
+      overlay.classList.add('show');
+      mainArea.classList.add('dimmed');
+    }
+    function closePanel() {
+      slotPanel.classList.remove('open');
+      overlay.classList.remove('show');
+      mainArea.classList.remove('dimmed');
+      resetSlide();
+    }
+
+    openBtn.addEventListener('click', openPanel);
+    closeBtn.addEventListener('click', closePanel);
+    overlay.addEventListener('click', closePanel);
+
+    // ========== 슬라이드 바 (위에서 아래로) ==========
+    let dragging = false;
+    let startY = 0;
+    let currentPull = 0; // 0(위) ~ 1(아래)
+
+    const TRACK_HEIGHT = 180;
+    const THUMB_HEIGHT = 42;
+    const MAX_TRAVEL = TRACK_HEIGHT - THUMB_HEIGHT - 8;
+
+    function setPull(ratio) {
+      ratio = Math.max(0, Math.min(1, ratio));
+      currentPull = ratio;
+      const top = 4 + ratio * MAX_TRAVEL;
+      slideThumb.style.top = top + 'px';
+      slideFill.style.height = (ratio * 100) + '%';
+    }
+
+    function resetSlide() {
+      setPull(0);
+      slideThumb.textContent = '↓';
+    }
+
+    function onStart(clientY) {
+      if (G.spinning) return;
+      dragging = true;
+      startY = clientY;
+      slideThumb.style.transition = 'none';
+      slideFill.style.transition = 'none';
+    }
+
+    function onMove(clientY) {
+      if (!dragging) return;
+      const delta = clientY - startY; // 아래로 내리면 양수
+      const ratio = delta / MAX_TRAVEL;
+      setPull(ratio);
+    }
+
+    function onEnd() {
+      if (!dragging) return;
+      dragging = false;
+      slideThumb.style.transition = 'top 0.2s ease';
+      slideFill.style.transition = 'height 0.2s ease';
+
+      if (currentPull >= 0.85 && doSpin()) {
+        slideThumb.textContent = '✓';
+      } else {
+        resetSlide();
+      }
+    }
+
+    // 마우스
+    slideThumb.addEventListener('mousedown', e => {
+      e.preventDefault();
+      onStart(e.clientY);
+    });
+    window.addEventListener('mousemove', e => onMove(e.clientY));
+    window.addEventListener('mouseup', onEnd);
+
+    // 터치
+    slideThumb.addEventListener('touchstart', e => {
+      e.preventDefault();
+      onStart(e.touches[0].clientY);
+    }, { passive: false });
+
+    window.addEventListener('touchmove', e => {
+      if (dragging) {
+        e.preventDefault();
+        onMove(e.touches[0].clientY);
+      }
+    }, { passive: false });
+
+    window.addEventListener('touchend', onEnd);
+
+    // ========== 유틸 / HUD ==========
+    const $ = id => document.getElementById(id);
+    const field = $('field'), battleMsg = $('battleMsg'), startBtn = $('startBtn');
+    let timer = null;
+
+    function say(t, ok) {
+      summonLog.textContent = t;
+      summonLog.classList.remove('success');
+      if (ok) { void summonLog.offsetWidth; summonLog.classList.add('success'); }
+    }
+    function updateHud() {
+      goldEl.textContent = G.gold;
+      remainSpinEl.textContent = G.spins;
+      unitCountEl.textContent = G.units.length;
+      $('wave').textContent = G.wave;
+      $('baseHp').textContent = Math.max(0, Math.ceil(G.baseHp));
+      $('ruby').textContent = META.ruby;
+      $('costEl').textContent = spinCost();
+      $('maxUnits').textContent = maxUnits();
+    }
+
+    // ========== 스핀 + 판정 + 소환 ==========
+    function weightedRandom() {
+      const pool = SYMBOLS.filter(x => META.best >= (x.need || 0)); // 최고 웨이브로 해금
+      const w = x => x.weight * (G.core === 'lucky' && x.name === 'Special' ? 2 : 1);
+      let r = Math.random() * pool.reduce((a, x) => a + w(x), 0);
+      for (const x of pool) { r -= w(x); if (r <= 0) return x; }
+      return pool[0];
+    }
+
+    function drawGrid() { cells.forEach((c, i) => c.textContent = G.grid[i].icon); }
+
+    // 현재 그리드의 매칭 판정 + 소환. 매칭된 줄 수를 반환
+    function evalGrid() {
+      const g = G.grid, hits = [], idx = new Set();
+      PAYLINES.forEach(([a, b, c]) => {
+        if (g[a].name === g[b].name && g[b].name === g[c].name) { hits.push(g[a]); [a, b, c].forEach(i => idx.add(i)); }
+      });
+      cells.forEach((c, i) => c.classList.toggle('matched', idx.has(i)));
+      if (!hits.length) return 0;
+      let n = 0;
+      hits.forEach(sym => { if (summonUnit(sym)) n++; });
+      say(n < hits.length ? `${hits.length}줄 매칭! 보드가 가득 차 ${n}기만 소환` : `${hits.length}줄 매칭! ${n}기 소환`, n > 0);
+      return hits.length;
+    }
+
+    // 스핀이 시작되면 true, 거절되면 false (이유는 로그로 안내)
+    function doSpin() {
+      if (G.spinning || G.phase === 'over') return false;
+      if (G.spins <= 0) { say('남은 횟수가 없어요. 웨이브를 클리어하면 충전됩니다'); return false; }
+      if (G.gold < spinCost()) { say('골드가 부족해요'); return false; }
+
+      G.spinning = true; G.nudge = false;
+      G.gold -= spinCost(); G.spins -= 1;
+      updateHud(); say('스핀 중...');
+      cells.forEach(c => c.classList.remove('matched'));
+
+      // 결과를 먼저 정하고, 릴이 열 단위로 차례대로 멈추는 연출
+      const result = Array.from({ length: 9 }, () => weightedRandom());
+      cells.forEach((cell, i) => {
+        cell.classList.add('rolling');
+        const iv = setInterval(() => { cell.textContent = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)].icon; }, 70);
+        setTimeout(() => {
+          clearInterval(iv);
+          cell.classList.remove('rolling');
+          cell.textContent = result[i].icon;
+          cell.classList.add('spinning');
+          setTimeout(() => cell.classList.remove('spinning'), 400);
+        }, 450 + (i % 3) * 220);
+      });
+
+      setTimeout(() => {
+        G.grid = result;
+        if (!evalGrid()) { G.nudge = true; say(`매칭 없음 · 칸을 탭하면 그 열이 한 칸 내려가요 (넛지 -${NUDGE_COST})`); }
+        G.spinning = false;
+        setTimeout(resetSlide, 400);
+      }, 450 + 2 * 220 + 200);
+      return true;
+    }
+
+    // 넛지: 매칭 실패 직후 1회, 탭한 칸의 열을 한 칸 내리고 맨 위에 새 심볼
+    function nudge(i) {
+      if (!G.nudge || G.spinning) return;
+      if (G.gold < NUDGE_COST) { say('골드가 부족해요'); return; }
+      G.gold -= NUDGE_COST; G.nudge = false;
+      const c = i % 3, g = G.grid;
+      g[c + 6] = g[c + 3]; g[c + 3] = g[c]; g[c] = weightedRandom();
+      drawGrid(); updateHud();
+      [c, c + 3, c + 6].forEach(k => { cells[k].classList.add('spinning'); setTimeout(() => cells[k].classList.remove('spinning'), 400); });
+      if (!evalGrid()) say('넛지 실패…');
+    }
+    cells.forEach((el, i) => el.addEventListener('click', () => nudge(i)));
+
+    function summonUnit(sym) {
+      if (G.units.length >= maxUnits()) return false;
+      G.units.push({ icon: sym.icon, name: sym.name, hp0: sym.hp, atk0: sym.atk, spd: sym.spd, lv: 0, imp: 0, traits: [Math.floor(Math.random() * TRAITS.length)], sub: null, awake: false, lock: false, sk: 4, cd: 0, isNew: true });
+      const nu = G.units[G.units.length - 1];
+      applyStats(nu); dexAdd('u', nu.name); nu.traits.forEach(t => dexAdd('t', t));
+      renderBoard();
+      G.units.forEach(u => u.isNew = false);
+      updateHud();
+      renderField();
+      return true;
+    }
+
+    // ========== 렌더 ==========
+    // ========== 흡수 (Absorb) ==========
+    // 흡수 Lv마다 +20%, 3Lv마다 ★ 승급(추가 +30%)
+    let sel = -1;
+    const starOf = u => Math.min(3, Math.floor(u.lv / 3));
+    function applyStats(u) {
+      const t = u.traits.map(i => TRAITS[i]), sb = u.sub ? SUBS[u.sub] : {};
+      const prod = k => t.reduce((a, x) => a * (x[k] || 1), 1);
+      const m = (1 + 0.2 * u.lv + 0.04 * u.imp) * (1 + 0.3 * starOf(u)) * (u.awake ? 1.5 : 1);
+      u.maxHp = Math.round(u.hp0 * m * prod('hp') * (sb.hp || 1) * (1 + 0.05 * META.up.hp));
+      u.atk = Math.round(u.atk0 * m * prod('atk') * (sb.atk || 1) * (1 + 0.05 * META.up.atk) * 10) / 10;
+      u.spdM = prod('spd');
+      u.steal = t.reduce((a, x) => a + (x.steal || 0), 0);
+      u.burn = t.reduce((a, x) => a + (x.burn || 0), 0);
+      u.hp = u.maxHp;
+    }
+    function absorb(keep, food) {
+      const k = G.units[keep], f = G.units[food];
+      sel = -1;
+      if (f.lock) { battleMsg.textContent = '🔒 잠긴 유닛은 먹일 수 없어요'; renderBoard(); return; }
+      if (k.lv >= MAX_LV) { battleMsg.textContent = '이미 최대 Lv이에요'; renderBoard(); return; }
+      const gain = k.name === f.name ? 2 : 1, oldStar = starOf(k);
+      k.lv = Math.min(MAX_LV, k.lv + gain);
+      k.imp += 1 + f.imp; // Imprint 전달
+      while (k.imp >= 5) { k.imp -= 5; k.lv = Math.min(MAX_LV, k.lv + 1); } // Imprint 5 → Lv 전환
+      const inh = f.traits.find(t => !k.traits.includes(t));
+      if (inh !== undefined && k.traits.length < 2) k.traits.push(inh); // 특성 계승
+      applyStats(k);
+      G.units.splice(food, 1);
+      battleMsg.textContent = `${k.name} 흡수! Lv ${k.lv}` + (starOf(k) > oldStar ? ` · ★${starOf(k)} 승급!` : '') + (inh !== undefined && k.traits.includes(inh) ? ` · 특성 계승: ${TRAITS[inh].n}` : '');
+      renderBoard(); updateHud(); renderField();
+    }
+    unitBoard.addEventListener('click', e => {
+      const card = e.target.closest('.unit-card');
+      if (card && e.target.closest('.inf')) { detIdx = +card.dataset.i; openDetail(); return; }
+      if (!card) return;
+      if (G.phase === 'fight') { battleMsg.textContent = '전투 중에는 흡수할 수 없어요'; return; }
+      const i = +card.dataset.i;
+      if (sel === -1) sel = i;
+      else if (sel === i) sel = -1;
+      else return absorb(sel, i);
+      battleMsg.textContent = sel > -1 ? '먹일 유닛을 탭하세요 (같은 종류면 Lv +2)' : '남길 유닛 → 먹일 유닛 순서로 탭하면 흡수해요';
+      renderBoard();
+    });
+
+    function renderBoard() {
+      unitBoard.innerHTML = '<div class="unit-board-label">BOARD</div>' + G.units.map((u, i) =>
+        `<div class="unit-card${u.isNew ? ' new' : ''}${i === sel ? ' sel' : ''}" data-i="${i}"><i class="inf">ⓘ</i>${u.lock ? '<i class="lk">🔒</i>' : ''}${u.icon}<div class="name">${u.name}</div><div class="lv">${u.lv ? 'Lv' + u.lv : ''}${starOf(u) ? ' ' + '★'.repeat(starOf(u)) : ''}</div></div>`).join('');
+    }
+    function actorHtml(a, cls) {
+      const hit = performance.now() - (a.hitAt || 0) < 150;
+      return `<div class="actor ${cls}${hit ? ' hit' : ''}"><div class="hp"><i style="width:${Math.max(0, a.hp / a.maxHp * 100)}%"></i></div><div class="ico">${a.icon}</div></div>`;
+    }
+    function renderField() {
+      field.innerHTML = `<div class="side">${G.units.map(u => actorHtml(u, 'ally')).join('')}</div>` +
+                        `<div class="side">${G.enemies.map(e => actorHtml(e, 'foe')).join('')}</div>`;
+    }
+
+    // ========== 웨이브 / 자동 전투 ==========
+    function mkEnemy(icon, hp, atk, spd) { return { icon, maxHp: hp, hp, atk, spd, cd: spd }; }
+
+    function startWave() {
+      if (G.phase !== 'prep') return;
+      if (!G.units.length) { battleMsg.textContent = '유닛이 없어요. 슬롯을 돌려 먼저 소환하세요'; return; }
+      const w = G.wave, hp = 20 + w * 10, atk = 2 + w * 1.2;
+      G.enemies = Array.from({ length: 2 + Math.floor(w * 0.8) }, () => mkEnemy('👾', hp, atk, 1.2));
+      if (w % 5 === 0) G.enemies.push(mkEnemy('👹', hp * 3, atk * 1.5, 1.5));
+      G.phase = 'fight'; sel = -1;
+      startBtn.disabled = true;
+      battleMsg.textContent = `Wave ${w} 전투 중`;
+      renderField();
+      timer = setInterval(tick, 100);
+    }
+
+    function tick() {
+      const dt = 0.1, now = performance.now();
+      G.units.forEach(u => {
+        u.cd -= dt;
+        if (u.cd <= 0 && G.enemies.length) {
+          G.enemies[0].hp -= u.atk; G.enemies[0].hitAt = now; u.cd = u.spd * u.spdM;
+          if (u.steal) u.hp = Math.min(u.maxHp, u.hp + u.atk * u.steal);
+          if (u.burn) { const e = G.enemies[0]; e.burn = 3; e.burnDps = Math.max(e.burnDps || 0, u.atk * u.burn); }
+          pop(u.atk, 'R', '#e8eaf0');
+        }
+        if (u.sub && G.enemies.length) { u.sk -= dt; if (u.sk <= 0) { u.sk = 4; useSkill(u, now); } }
+      });
+      G.enemies = G.enemies.filter(e => e.hp > 0);
+
+      G.enemies.forEach(e => {
+        if (e.burn > 0) { e.burn -= dt; e.hp -= e.burnDps * dt; } // 상태이상: 화상
+        if (e.stun > 0) { e.stun -= dt; return; } // 상태이상: 기절
+        e.cd -= dt;
+        if (e.cd <= 0) {
+          e.cd = e.spd;
+          if (G.units.length) { G.units[0].hp -= e.atk; G.units[0].hitAt = now; pop(e.atk, 'L', '#f87171'); }
+          else G.baseHp -= e.atk;
+        }
+      });
+      const before = G.units.length;
+      G.units = G.units.filter(u => u.hp > 0);
+      if (G.units.length !== before) renderBoard();
+
+      updateHud();
+      renderField();
+      if (G.baseHp <= 0) endGame();
+      else if (!G.enemies.length) clearWave();
+    }
+
+    function clearWave() {
+      clearInterval(timer);
+      const reward = Math.round((180 + G.wave * 50) * (G.core === 'rich' ? 1.5 : 1));
+      G.gold += reward;
+      const rb = 2 + (G.wave % 5 === 0 ? 5 : 0); // 보스 웨이브 보너스
+      META.ruby += rb; G.runRuby += rb; META.best = Math.max(META.best, G.wave); saveMeta();
+      G.spins += 3;
+      G.wave += 1;
+      G.phase = 'prep';
+      G.units.forEach(u => u.hp = u.maxHp);
+      startBtn.disabled = false;
+      battleMsg.textContent = `클리어! 💰+${reward} 💎+${rb} 🎰+3 · 슬롯을 돌리고 다음 웨이브를 시작하세요`;
+      renderBoard(); updateHud(); renderField();
+    }
+
+    function endGame() {
+      clearInterval(timer);
+      G.phase = 'over';
+      startBtn.disabled = false;
+      startBtn.textContent = '다시 시작';
+      $('rsText').innerHTML = `Wave ${G.wave} 도달<br>이번 판 💎 ${G.runRuby} 획득 (보유 ${META.ruby})<br>상점에서 업그레이드 후 다시 도전하세요`;
+      $('resultScreen').classList.add('show');
+      battleMsg.textContent = `GAME OVER · Wave ${G.wave}에서 기지가 무너졌어요`;
+    }
+
+    function resetGame() {
+      clearInterval(timer);
+      Object.assign(G, { gold: 1250 + 100 * META.up.gold, spins: 10 + 2 * META.up.spin, wave: 1, baseHp: 100, phase: 'prep', spinning: false, units: [], enemies: [], runRuby: 0, core: null });
+      $('resultScreen').classList.remove('show');
+      G.grid = Array.from({ length: 9 }, () => weightedRandom()); G.nudge = false; sel = -1;
+      cells.forEach(c => c.classList.remove('matched'));
+      drawGrid();
+      summonUnit(SYMBOLS[0]); // 시작 유닛
+      startBtn.textContent = '▶ 웨이브 시작';
+      startBtn.disabled = false;
+      battleMsg.textContent = '슬롯으로 유닛을 모으세요. 남길 유닛 → 먹일 유닛 순서로 탭하면 흡수해요';
+      say('슬라이드 바를 아래로 내려 스핀하세요');
+      showCore();
+      renderBoard(); updateHud(); renderField();
+    }
+
+    // ========== 특성 / 서브클래스 / 스킬 / 유닛 상세 ==========
+    const TRAITS = [
+      { n: '강인',   d: 'HP +30%',            hp: 1.3 },
+      { n: '날카로움', d: '공격력 +25%',        atk: 1.25 },
+      { n: '신속',   d: '공격 간격 -20%',      spd: 0.8 },
+      { n: '흡혈',   d: '공격 시 피해의 30% 회복', steal: 0.3 },
+      { n: '화염',   d: '공격 시 화상 (3초간 초당 ATK의 20%)', burn: 0.2 },
+    ];
+    const SUBS = {
+      berserk: { n: '광전사', d: '공격력 +30% · 4초마다 3배 피해 + 기절 1.5초', atk: 1.3 },
+      bulwark: { n: '수호자', d: 'HP +30% · 4초마다 아군 전체 HP 15% 회복', hp: 1.3 },
+    };
+    function useSkill(u, now) {
+      if (u.sub === 'berserk') { const e = G.enemies[0]; e.hp -= u.atk * 3; e.stun = 1.5; e.hitAt = now; }
+      else G.units.forEach(a => a.hp = Math.min(a.maxHp, a.hp + a.maxHp * 0.15));
+    }
+
+    let detIdx = -1;
+    function renderDetail() {
+      const u = G.units[detIdx];
+      if (!u) return closeDetail();
+      const st = starOf(u);
+      $('detailBody').innerHTML =
+        `<div class="shop-row"><div class="info">${u.icon} ${u.name} · Lv ${u.lv} ${'★'.repeat(st)}<small>HP ${u.maxHp} · ATK ${u.atk} · 간격 ${(u.spd * u.spdM).toFixed(2)}s · Imprint ${u.imp}/5</small></div></div>` +
+        `<div class="shop-row"><div class="info">특성<small>${u.traits.map(i => TRAITS[i].n + ': ' + TRAITS[i].d).join('<br>')}</small></div></div>` +
+        `<div class="shop-row"><div class="info">${u.sub ? SUBS[u.sub].n : '서브클래스'}<small>${u.sub ? SUBS[u.sub].d : (st >= 1 ? '하나를 선택하세요 (변경 불가)' : '★1(Lv 3)부터 선택 가능')}</small></div>` +
+          (!u.sub && st >= 1 ? Object.keys(SUBS).map(k => `<button class="buy" data-sub="${k}">${SUBS[k].n}</button>`).join('') : '') + `</div>` +
+        `<div class="shop-row"><div class="info">각성<small>${u.awake ? '각성 완료 (스탯 ×1.5)' : '★3(Lv 9) + 서브클래스 필요 · 💰500'}</small></div>` +
+          (!u.awake && st >= 3 && u.sub ? '<button class="buy" data-awake="1">각성</button>' : '') + `</div>` +
+        `<div class="shop-row"><div class="info">잠금<small>잠그면 흡수 재료로 쓰이지 않아요</small></div><button class="buy" data-lock="1">${u.lock ? '🔒 해제' : '🔓 잠금'}</button></div>`;
+    }
+    $('detailBody').addEventListener('click', e => {
+      const b = e.target.closest('.buy'), u = G.units[detIdx];
+      if (!b || !u) return;
+      const msg = $('detailMsg');
+      if (b.dataset.sub) { u.sub = b.dataset.sub; dexAdd('s', u.sub); applyStats(u); msg.textContent = `${SUBS[u.sub].n} 선택!`; }
+      else if (b.dataset.awake) {
+        if (G.gold < 500) { msg.textContent = '골드가 부족해요 (500)'; return; }
+        G.gold -= 500; u.awake = true; applyStats(u); updateHud(); msg.textContent = '각성!';
+      } else { u.lock = !u.lock; msg.textContent = u.lock ? '잠금' : '잠금 해제'; }
+      renderBoard(); renderDetail(); renderField();
+    });
+    function openDetail() {
+      $('detailMsg').textContent = '';
+      renderDetail();
+      $('detailPanel').classList.add('open');
+      overlay.classList.add('show');
+      mainArea.classList.add('dimmed');
+    }
+    function closeDetail() {
+      $('detailPanel').classList.remove('open');
+      overlay.classList.remove('show');
+      mainArea.classList.remove('dimmed');
+    }
+    $('detailClose').addEventListener('click', closeDetail);
+    overlay.addEventListener('click', closeDetail);
+    $('rsBtn').addEventListener('click', () => resetGame());
+
+    // ========== Core / 로비 / 도감 / 연출 ==========
+    const CORES = [
+      { id: 'lucky', n: '🍀 행운', d: '⭐ Special 등장 확률 ×2' },
+      { id: 'rich',  n: '💰 풍요', d: '웨이브 클리어 골드 +50%' },
+      { id: 'cheap', n: '🏷️ 절약', d: '스핀 비용 100 → 70' },
+      { id: 'elite', n: '🎖️ 정예', d: '시작 유닛 +1 (랜덤)' },
+    ];
+    const spinCost = () => G.core === 'cheap' ? 70 : SPIN_COST;
+    function showCore() {
+      $('coreList').innerHTML = CORES.map(c => `<div class="shop-row"><div class="info">${c.n}<small>${c.d}</small></div><button class="buy" data-core="${c.id}">선택</button></div>`).join('');
+      $('coreScreen').classList.add('show');
+    }
+    $('coreList').addEventListener('click', e => {
+      const b = e.target.closest('.buy');
+      if (!b) return;
+      const c = CORES.find(x => x.id === b.dataset.core);
+      G.core = c.id;
+      if (c.id === 'elite') summonUnit(weightedRandom());
+      $('coreScreen').classList.remove('show');
+      battleMsg.textContent = `Core ${c.n} · 슬롯으로 유닛을 모으고 웨이브를 시작하세요`;
+      updateHud();
+    });
+    $('lbStart').addEventListener('click', () => { $('lobby').classList.remove('show'); if (G.phase === 'over') resetGame(); });
+    $('rsLobby').addEventListener('click', () => { $('resultScreen').classList.remove('show'); $('lbText').textContent = `최고 기록 Wave ${META.best} · 💎 ${META.ruby}`; $('lobby').classList.add('show'); });
+
+    function dexAdd(kind, v) { if (!META.dex[kind].includes(v)) { META.dex[kind].push(v); saveMeta(); } }
+    function dexHtml() {
+      const row = (a, b) => `<div class="shop-row"><div class="info">${a}<small>${b}</small></div></div>`;
+      return SYMBOLS.map(x => META.best >= (x.need || 0)
+          ? row(`${x.icon} ${x.name}`, META.dex.u.includes(x.name) ? `HP ${x.hp} · ATK ${x.atk}` : '아직 소환하지 못했어요')
+          : row('🔒 ???', `Wave ${x.need} 도달 시 해금`)).join('') +
+        row('특성', TRAITS.map((t, i) => META.dex.t.includes(i) ? t.n : '???').join(' · ')) +
+        row('서브클래스', Object.keys(SUBS).map(k => META.dex.s.includes(k) ? SUBS[k].n : '???').join(' · ')) +
+        row('기록', `최고 Wave ${META.best}`);
+    }
+
+    // 데미지 숫자 (side: 'R' = 적 쪽, 'L' = 아군 쪽)
+    function pop(v, side, color) {
+      const el = document.createElement('div');
+      el.className = 'pop';
+      el.textContent = Math.round(v);
+      el.style.color = color;
+      el.style.left = (side === 'R' ? 62 + Math.random() * 24 : 12 + Math.random() * 24) + '%';
+      el.style.top = (25 + Math.random() * 30) + '%';
+      $('fx').appendChild(el);
+      setTimeout(() => el.remove(), 700);
+    }
+    // ========== 상점 / 영구 업그레이드 (💎) ==========
+    const SAVE_KEY = 'slotBattleSave_v1';
+    const META = { ruby: 0, best: 0, dex: { u: [], t: [], s: [] }, up: { gold: 0, spin: 0, atk: 0, hp: 0, slot: 0 } };
+    const maxUnits = () => MAX_UNITS + META.up.slot;
+
+    // 영구 업그레이드: 다음 레벨 비용 = cost × (현재 Lv + 1)
+    const UPGRADES = [
+      { k: 'gold', name: '시작 골드',  desc: '런 시작 골드 +100', max: 5,  cost: 20 },
+      { k: 'spin', name: '시작 스핀',  desc: '런 시작 스핀 +2',   max: 5,  cost: 20 },
+      { k: 'atk',  name: '공격 강화',  desc: '유닛 공격력 +5%',   max: 10, cost: 15 },
+      { k: 'hp',   name: '체력 강화',  desc: '유닛 체력 +5%',     max: 10, cost: 15 },
+      { k: 'slot', name: '보드 확장',  desc: '최대 유닛 +1',      max: 3,  cost: 60 },
+    ];
+    // 아이템: 구매 즉시 사용. use()가 false면 사용 불가(루비 차감 없음)
+    const ITEMS = [
+      { id: 'spin',   icon: '🎰', name: '스핀 팩',    desc: '스핀 +5회',          cost: 10, use: () => { G.spins += 5; return true; } },
+      { id: 'gold',   icon: '💰', name: '골드 주머니', desc: '골드 +500',          cost: 15, use: () => { G.gold += 500; return true; } },
+      { id: 'repair', icon: '🏰', name: '기지 수리',   desc: '기지 HP +50 (최대 100)', cost: 12, fail: '기지 HP가 이미 가득해요',
+        use: () => { if (G.baseHp >= 100) return false; G.baseHp = Math.min(100, G.baseHp + 50); return true; } },
+      { id: 'summon', icon: '🎫', name: '소환권',      desc: '랜덤 유닛 1기 즉시 소환', cost: 20, fail: '보드가 가득 찼어요',
+        use: () => { if (G.units.length >= maxUnits()) return false; summonUnit(weightedRandom()); return true; } },
+    ];
+
+    function loadMeta() {
+      try {
+        const d = JSON.parse(localStorage.getItem(SAVE_KEY));
+        if (d) { META.ruby = d.ruby | 0; META.best = d.best | 0; if (d.dex) META.dex = d.dex; Object.assign(META.up, d.up || {}); }
+      } catch (e) {}
+    }
+    function saveMeta() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(META)); } catch (e) {} }
+
+    let shopTab = 'items';
+    function renderShop() {
+      $('rubyShop').textContent = META.ruby;
+      $('shopList').innerHTML = shopTab === 'dex' ? dexHtml() : shopTab === 'items'
+        ? ITEMS.map(it => `<div class="shop-row"><div class="info">${it.icon} ${it.name}<small>${it.desc}</small></div><button class="buy" data-item="${it.id}" ${META.ruby < it.cost ? 'disabled' : ''}>💎 ${it.cost}</button></div>`).join('')
+        : UPGRADES.map(u => {
+            const lv = META.up[u.k], maxed = lv >= u.max, cost = u.cost * (lv + 1);
+            return `<div class="shop-row"><div class="info">${u.name}<small>${u.desc} · Lv ${lv}/${u.max}</small></div><button class="buy" data-up="${u.k}" ${maxed || META.ruby < cost ? 'disabled' : ''}>${maxed ? 'MAX' : '💎 ' + cost}</button></div>`;
+          }).join('');
+    }
+
+    $('shopList').addEventListener('click', e => {
+      const b = e.target.closest('.buy');
+      if (!b || b.disabled) return;
+      const msg = $('shopMsg');
+      if (b.dataset.item) {
+        const it = ITEMS.find(x => x.id === b.dataset.item);
+        if (G.phase === 'over') { msg.textContent = '게임 오버 상태예요. 다시 시작한 뒤 사용하세요'; return; }
+        if (!it.use()) { msg.textContent = it.fail; return; }
+        META.ruby -= it.cost;
+        msg.textContent = `${it.name} 사용!`;
+      } else {
+        const u = UPGRADES.find(x => x.k === b.dataset.up);
+        META.ruby -= u.cost * (META.up[u.k] + 1);
+        META.up[u.k] += 1;
+        G.units.forEach(x => { const r = x.hp / x.maxHp; applyStats(x); x.hp = x.maxHp * r; });
+        msg.textContent = `${u.name} Lv ${META.up[u.k]}!`;
+      }
+      saveMeta(); updateHud(); renderShop(); renderField();
+    });
+
+    document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+      shopTab = t.dataset.tab;
+      document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === t));
+      $('shopMsg').textContent = '';
+      renderShop();
+    }));
+    function closeShop() {
+      $('shopPanel').classList.remove('open');
+      overlay.classList.remove('show');
+      mainArea.classList.remove('dimmed');
+    }
+    $('shopBtn').addEventListener('click', () => {
+      $('shopMsg').textContent = '';
+      renderShop();
+      $('shopPanel').classList.add('open');
+      overlay.classList.add('show');
+      mainArea.classList.add('dimmed');
+    });
+    $('shopClose').addEventListener('click', closeShop);
+    overlay.addEventListener('click', closeShop);
+    loadMeta();
+    $('lbText').textContent = `최고 기록 Wave ${META.best} · 💎 ${META.ruby}`;
+
+    startBtn.addEventListener('click', () => G.phase === 'over' ? resetGame() : startWave());
+    resetGame();
+  </script>
+</body>
+</html>
