@@ -49,6 +49,13 @@
       position: relative;
     }
 
+    .wave-strip { display:flex; align-items:center; gap:6px; }
+    .wave-strip i { font-style:normal; }
+    .ws-cur { background:#30275b; border:1px solid #8b75ff; border-radius:8px; padding:2px 8px; font-weight:800; color:#fff; white-space:nowrap; }
+    .ws-cur.boss { background:#4a1d24; border-color:#f87171; }
+    .ws-cur small { font-weight:500; color:#9aa3c0; font-size:10px; }
+    .ws-next { color:#7a84a5; font-size:11px; }
+    .ws-boss { color:#fca5a5; font-size:11px; white-space:nowrap; }
     .top-bar span {
       background: #252b42;
       padding: 4px 10px;
@@ -592,6 +599,10 @@
     .dcard .nm { font-weight:800; font-size:15px; } .dcard .nm small, .dcard .stars small { font-weight:500; color:#9aa3c0; font-size:11px; }
     .dcard .stars { color:#fbbf24; margin-top:2px; }
     .dcard .st { display:grid; grid-template-columns:1fr 1fr; gap:2px 10px; font-size:12px; color:#c7cde4; margin-top:6px; }
+    .slots { display:flex; gap:4px; flex-wrap:wrap; margin:6px 0 2px; }
+    .slot { font-size:11px; padding:3px 7px; border-radius:7px; border:1px solid #465078; background:#20263a; color:#7a84a5; }
+    .slot.on { border-color:#8b75ff; background:#30275b; color:#e8eaf0; }
+    .slot.new { border-color:#34d399; border-style:dashed; color:#34d399; background:rgba(52,211,153,.08); }
     .bench-tag { font-size:9px; color:#c4b5fd; line-height:1.2; white-space:nowrap; }
     .field-pos-label { position: absolute; top: 4px; left: 8px; font-size: 10px; color: #5a6480; pointer-events: none; }
     .drag-ghost {
@@ -624,7 +635,7 @@
     <div class="top-bar">
       <span>💰 <span id="gold">900</span></span>
       <span>🔷 <span id="essence">0</span></span>
-      <span>W <span id="wave">1</span></span>
+      <span class="wave-strip"><span id="wave">W1</span></span>
       <span>🏰 <span id="baseHp">100</span></span>
       <span><span id="unitCount">0</span>/<span id="maxUnits">5</span></span>
       <span>💎 <span id="ruby">0</span></span>
@@ -734,7 +745,7 @@
 
   <script>
     const BENCH_MAX = 3, MELEE = ['Warrior', 'Guard', 'Cavalry']; // 자유 배치 (Slotbound: 줄 구분 없음, 배열 순서가 앞→뒤)
-    const SPIN_COST = 100, NUDGE_COST = 40, MAX_UNITS = 5, MAX_LV = 18;
+    const SPIN_COST = 100, NUDGE_COST = 40, MAX_UNITS = 5, MAX_LV = 60;
 
     // 심볼 = 유닛 원형 데이터 (hp / atk / spd = 공격 간격(초))
     const SYMBOLS = [
@@ -876,7 +887,14 @@
       $('essence').textContent = G.essence | 0;
       remainSpinEl.textContent = G.spins;
       unitCountEl.textContent = G.units.length + (G.bench.length ? '+' + G.bench.length : '');
-      $('wave').textContent = G.stage >= 0 ? G.wave + '/' + waveMax() : G.wave + ' ♾️';
+      { // 웨이브 표시: 현재 웨이브 / 다음 웨이브 / 가장 가까운 보스 웨이브
+        const inf = G.stage < 0, mx = inf ? Infinity : waveMax(), w = G.wave;
+        const isBoss = x => x % 5 === 0 || x === mx;
+        let nb = w; while (nb <= (inf ? w + 5 : mx) && !isBoss(nb)) nb++;
+        $('wave').innerHTML = `<i class="ws-cur${isBoss(w) ? ' boss' : ''}">${isBoss(w) ? '👹' : ''}W${w}<small>${inf ? ' ♾️' : '/' + mx}</small></i>` +
+          (w < mx ? `<i class="ws-next">${w + 1}</i>` : '') +
+          (nb > w && nb <= mx ? `<i class="ws-boss">👹${nb}</i>` : '');
+      }
       $('baseHp').textContent = Math.max(0, Math.ceil(G.baseHp));
       $('ruby').textContent = META.ruby;
       $('costEl').textContent = spinCost();
@@ -1050,7 +1068,7 @@
       const adv = !!sym.leg || !!(opts && opts.adv) || Math.random() < ADV_RATE;
       // 자유 배치: 필드 좌표(fx, fy). 근접은 앞(fx 높음), 원거리는 뒤
       const isMelee = MELEE.includes(sym.name);
-      const nu = { icon: sym.icon, name: sym.name, hp0: sym.hp, atk0: sym.atk, spd: sym.spd, lv: 0, imp: 0, traits: pickTraits(sym.leg ? 3 : adv ? 2 : 1), adv, leg: !!sym.leg, ask: adv ? ADV[sym.name].cd : 0, vh: rollV(adv), va: rollV(adv), sub: null, awake: false, lock: false, sk: 4, cd: 0, isNew: true,
+      const nu = { icon: sym.icon, name: sym.name, hp0: sym.hp, atk0: sym.atk, spd: sym.spd, lv: 1, imps: [], adv, leg: !!sym.leg, ask: adv ? ADV[sym.name].cd : 0, vh: rollV(adv), va: rollV(adv), sub: null, awake: false, lock: false, sk: 4, cd: 0, isNew: true,
         fx: isMelee ? (55 + Math.random() * 30) : (15 + Math.random() * 30),
         fy: 25 + Math.random() * 50 };
       if (toBoard) {
@@ -1059,7 +1077,7 @@
         G.bench.push(nu);
         battleMsg.textContent = `⚠ 출전 한도 ${maxUnits()}마리 초과! ${nu.icon} ${nu.name}이 후방 대기 중입니다. 필드에서 유닛 위로 드래그해 흡수하세요.`;
       }
-      applyStats(nu); dexAdd('u', nu.name); nu.traits.forEach(t => dexAdd('t', t));
+      applyStats(nu); dexAdd('u', nu.name);
       if (nu.leg) { dexAdd('l', nu.name); battleMsg.textContent = `🌈 전설 ${nu.icon} ${nu.name} 소환! 전용 스킬 ‘${ADV[nu.name].n}’`; }
       else if (adv) { dexAdd('a', nu.name); battleMsg.textContent = `✨ Advanced ${nu.name} 소환! 전용 스킬 ‘${ADV[nu.name].n}’`; }
       renderBoard();
@@ -1073,20 +1091,24 @@
     // 드래그/탭으로 희생 유닛을 대상 유닛에 흡수하고 특성은 플레이어가 선택
     let sel = -1, absorbMode = false, pendingAbsorb = null;
     // 등급별 승급 레벨 (Slotbound 방식): 기본 ★1 → ★2 → ★3
-    const STAR_AT = { n: [5, 12], a: [6, 14], l: [8, 18] };
-    const tierOf = u => u.leg ? 'l' : u.adv ? 'a' : 'n';
+    const STAR_AT = { n: [5, 12], a: [6, 14], r: [8, 18], l: [10, 20] }; // 일반 / 고급 / 희귀·특수 / 전설
+    const tierOf = u => u.leg ? 'l' : u.name === 'Special' ? 'r' : u.adv ? 'a' : 'n';
     const starOf = u => { const t = STAR_AT[tierOf(u)]; return 1 + (u.lv >= t[0] ? 1 : 0) + (u.lv >= t[1] ? 1 : 0); };
     const nextStarLv = u => { const t = STAR_AT[tierOf(u)]; return u.lv < t[0] ? t[0] : u.lv < t[1] ? t[1] : null; };
+    // 흡수 LV 성장 (표: HP +1.5%/ATK +1%/AS +0.5% per LV, 31~200은 절반, 201+는 공속 1/10). LV_K = 우리 게임(10~30웨이브) 보정 배율
+    const LV_K = 6;
+    const lvGrowth = lv => { const g = (a, b, c) => a * (Math.min(lv, 30) - 1) + b * Math.max(0, Math.min(lv, 200) - 30) + c * Math.max(0, lv - 200); return { hp: g(0.015, 0.0075, 0.0075) * LV_K, atk: g(0.01, 0.005, 0.005) * LV_K, as: g(0.005, 0.0025, 0.0005) * LV_K / 2 }; };
     function applyStats(u) {
       const oldMax = u.maxHp || 0;
       const oldHp = Number.isFinite(u.hp) ? u.hp : oldMax;
       const hpRatio = oldMax > 0 ? Math.max(0, Math.min(1, oldHp / oldMax)) : 1;
-      const t = u.traits.map(i => TRAITS[i]), sb = u.sub ? SUBS[u.sub] : {};
+      const t = [], sb = classOf(u)?.mod || {};
       const prod = k => t.reduce((a, x) => a * (x[k] || 1), 1);
-      const m = (1 + 0.2 * u.lv + 0.04 * u.imp) * (1 + 0.3 * (starOf(u) - 1)) * (u.awake ? 1.5 : 1);
-      u.maxHp = Math.round(u.hp0 * m * prod('hp') * (sb.hp || 1) * (1 + 0.05 * META.up.hp) * (1 + 0.08 * iLv('p_hp')) * (u.vh || 1) * (u.adv ? 1.25 : 1));
-      u.atk = Math.round(u.atk0 * m * prod('atk') * (sb.atk || 1) * (1 + 0.05 * META.up.atk) * (1 + 0.08 * iLv('p_atk')) * (u.va || 1) * (u.adv ? 1.25 : 1) * 10) / 10;
-      u.spdM = prod('spd') * (sb.spd || 1) * (1 - 0.04 * iLv('p_spd'));
+      const gl = lvGrowth(u.lv), m = [1, 1.6, 2.6][starOf(u) - 1] * (u.awake ? 1.5 : 1);
+      u.iL = {}; (u.imps || []).forEach(x => { u.iL[x.id] = x.lv; });
+      u.maxHp = Math.round(u.hp0 * m * (1 + gl.hp) * prod('hp') * (sb.hp || 1) * (1 + 0.05 * META.up.hp) * (1 + 0.08 * iLv('p_hp')) * (u.vh || 1) * (u.adv ? 1.25 : 1));
+      u.atk = Math.round(u.atk0 * m * (1 + gl.atk) * prod('atk') * (sb.atk || 1) * (1 + 0.05 * META.up.atk) * (1 + 0.08 * iLv('p_atk')) * (u.va || 1) * (u.adv ? 1.25 : 1) * 10) / 10;
+      u.spdM = prod('spd') * (sb.spd || 1) * (1 - 0.04 * iLv('p_spd')) / (1 + gl.as);
       u.steal = t.reduce((a, x) => a + (x.steal || 0), 0) + (u.leg && u.name === 'Vampire' ? 0.5 : 0);
       u.burn = t.reduce((a, x) => a + (x.burn || 0), 0);
       const sum = k => t.reduce((a, x) => a + (x[k] || 0), 0);
@@ -1107,17 +1129,21 @@
         battleMsg.textContent = '흡수 모드 종료';
       }
     }
+    // 흡수 LV = 기본 +1 + 제물이 보유한 각인(등급수치+각인LV-1) + 제물 흡수 LV 3당 +1 (+촉매) [+ 변환 보너스]
+    function absorbPlan(k, f) {
+      const ft = tierOf(f), held = (f.imps || []).reduce((a, x) => a + TIER_VAL[ft] + x.lv - 1, 0), exp = Math.floor(f.lv / 3), cat = iLv('p_abs');
+      const id = imprOf(f), have = id && k.imps.find(x => x.id === id);
+      const mode = !id ? 'none' : have ? (have.lv < 5 ? 'levelup' : 'convert') : (k.imps.length < impCap(k) ? 'equip' : 'full');
+      return { id, mode, base: 1 + held + exp + cat, held, exp, cat, conv: CONV_BONUS[ft] };
+    }
     function beginAbsorb(targetIndex, foodIndex) {
       if (G.phase === 'fight') { battleMsg.textContent = '전투 중에는 흡수할 수 없어요'; return; }
       if (targetIndex === foodIndex) return;
       const k = getU(targetIndex), f = getU(foodIndex);
       if (!k || !f) return;
       if (f.lock) { battleMsg.textContent = '🔒 잠긴 유닛은 희생시킬 수 없어요'; return; }
-      if (k.lv >= MAX_LV) { battleMsg.textContent = '대상 유닛이 이미 최대 레벨입니다'; return; }
       // 확인 단계: 여기서는 아무것도 바꾸지 않고, 확정(finishAbsorb) 때 적용합니다. 취소 가능.
-      const incoming = [...new Set((f.traits || []).filter(t => !k.traits.includes(t)))];
-      const duplicates = (f.traits || []).filter(t => k.traits.includes(t)).length;
-      pendingAbsorb = { unit: k, food: f, incoming, duplicateCount: duplicates, gain: k.name === f.name ? 2 : 1, name: f.name, sameName: k.name === f.name };
+      pendingAbsorb = Object.assign({ unit: k, food: f, name: f.name }, absorbPlan(k, f));
       sel = -1;
       showAbsorbChoices();
     }
@@ -1127,27 +1153,47 @@
       battleMsg.textContent = '흡수를 취소했어요';
       renderBoard(); renderField();
     }
+    const absorbOthers = k => [...G.units, ...G.bench].filter(x => x !== k && !x.lock).sort((a, b) => TIER_VAL[tierOf(a)] - TIER_VAL[tierOf(b)] || starOf(a) - starOf(b));
     function showAbsorbChoices() {
       const p = pendingAbsorb; if (!p) return;
-      const k = p.unit, f = p.food;
+      const k = p.unit, f = p.food, imp = p.id ? IMPR[p.id] : null, have = p.id && k.imps.find(x => x.id === p.id);
       const list = $('absorbChoiceList'); list.innerHTML = '';
-      const sameBonus = p.sameName ? ' (동종 +2레벨)' : '';
+      const lvTxt = g => k.lv >= MAX_LV ? `유닛 Lv ${k.lv} (최대)` : `유닛 Lv ${k.lv} → ${Math.min(MAX_LV, k.lv + g)}`;
+      const parts = ['기본 +1']; if (p.held) parts.push(`제물 각인 +${p.held}`); if (p.exp) parts.push(`제물 Lv +${p.exp}`); if (p.cat) parts.push(`촉매 +${p.cat}`);
       $('absorbChoiceTitle').textContent = '✨ 흡수 확인';
-      const head = `${f.icon}${f.name} → ${k.icon}${k.name} 흡수 · Lv ${k.lv} → ${Math.min(MAX_LV, k.lv + p.gain)}${sameBonus}`;
+      $('absorbChoiceText').innerHTML = `${f.icon}${f.name} → ${k.icon}${k.name} 흡수<br>${lvTxt(p.base)} <small>(${parts.join(' · ')})</small><br><small>제물 ${f.icon}${f.name}의 고유 각인: ` + (imp ? `<b>${imp.n}</b> (${imp.d(1)})` : '없음') + `</small><div style="margin-top:6px;font-size:11px;color:#9aa3c0">${k.icon}${k.name}의 각인 슬롯 ${k.imps.length}/${impCap(k)}</div>` + slotBoxes(k, p);
       const add = (cls, html, fn) => { const b = document.createElement('button'); b.className = 'trait-choice' + (cls ? ' ' + cls : ''); b.innerHTML = html; b.addEventListener('click', fn); list.appendChild(b); };
-      if (!p.incoming.length) {
-        $('absorbChoiceText').textContent = head + ' · 계승할 새 특성 없음';
-        add('', '✅ 흡수하기<small>희생 유닛은 사라집니다</small>', () => finishAbsorb(null));
-      } else {
-        $('absorbChoiceText').textContent = head + (k.traits.length < traitCap(k) ? ' · 계승할 특성을 선택하세요' : ' · 특성 슬롯 가득 · 교체하거나 성장치로 전환하세요');
-        p.incoming.forEach(t => {
-          if (k.traits.length < traitCap(k)) add('', `✨ ${TRAITS[t].n}<small>${TRAITS[t].d}</small>`, () => finishAbsorb({ type: 'add', trait: t }));
-          else k.traits.forEach((old, idx) => add('', `교체: ${TRAITS[old].n} → ${TRAITS[t].n}<small>${TRAITS[t].d}</small>`, () => finishAbsorb({ type: 'replace', index: idx, trait: t })));
-        });
-        add('convert', '⬆ 성장치로 전환<small>새 특성 대신 성장치 +2 (레벨업에 유리)</small>', () => finishAbsorb({ type: 'convert' }));
+      if (p.mode === 'none') add('', `✅ 흡수하기<small>${lvTxt(p.base)}</small>`, () => finishAbsorb(null));
+      else if (p.mode === 'levelup') add('', `✅ 흡수하기 · 각인 ${imp.n} LV${have.lv} → LV${have.lv + 1}<small>${imp.d(have.lv + 1)} · ${lvTxt(p.base)}</small>`, () => finishAbsorb(null));
+      else if (p.mode === 'equip') add('', `✅ 흡수하기 · 각인 ${imp.n} 장착 (LV1)<small>${imp.d(1)} · ${lvTxt(p.base)}</small>`, () => finishAbsorb(null));
+      else if (p.mode === 'convert') add('convert', `✅ 흡수하기 · 새 각인 없이 레벨만<small>${imp.n}이(가) 이미 최대(LV5)라 각인은 그대로 · 대신 유닛 Lv +${p.conv} 추가 · ${lvTxt(p.base + p.conv)}</small>`, () => finishAbsorb({ type: 'convert' }));
+      else {
+        k.imps.forEach((old, idx) => add('', `🔄 각인 교체: ${IMPR[old.id].n} → ${imp.n}<small>기존 ${IMPR[old.id].n} LV${old.lv}은(는) 사라지고, 새 각인 ${imp.n}은(는) LV1부터 시작<br>버릴 각인: ${IMPR[old.id].d(old.lv)}<br>새 각인: ${imp.d(1)}<br>${lvTxt(p.base)}</small>`, () => finishAbsorb({ type: 'swap', index: idx })));
+        add('convert', `🚫 새 각인은 받지 않기<small>각인은 지금 그대로 유지 · 대신 유닛 Lv +${p.conv} 추가 · ${lvTxt(p.base + p.conv)}</small>`, () => finishAbsorb({ type: 'convert' }));
+      }
+      if (k.imps.length >= impCap(k)) {
+        const others = absorbOthers(k);
+        if (others.length >= 2) {
+          const tot = others.reduce((a, o) => { const q = absorbPlan(k, o); return a + q.base + q.conv; }, 0);
+          add('convert', `⚡ 전체 흡수 (Absorb All · ${others.length}기)<small>잠금 안 된 나머지 유닛을 낮은 등급 순으로 전부 흡수 · 각인은 바뀌지 않고 레벨만 · ${lvTxt(tot)}</small>`, finishAbsorbAll);
+        }
       }
       add('cancel', '✖ 취소<small>아무것도 바뀌지 않아요</small>', cancelAbsorb);
       $('absorbChoice').classList.add('show');
+    }
+    function finishAbsorbAll() {
+      const p = pendingAbsorb; if (!p) return;
+      const k = p.unit, oldStar = starOf(k); let n = 0;
+      for (const o of absorbOthers(k)) {
+        if (k.lv >= MAX_LV) break;
+        const q = absorbPlan(k, o);
+        k.lv = Math.min(MAX_LV, k.lv + q.base + q.conv);
+        const fi = G.units.indexOf(o), bi = G.bench.indexOf(o); if (fi >= 0) G.units.splice(fi, 1); else if (bi >= 0) G.bench.splice(bi, 1);
+        n++;
+      }
+      applyStats(k); $('absorbChoice').classList.remove('show');
+      battleMsg.textContent = `⚡ ${n}기 전체 흡수! ${k.icon}${k.name} Lv${k.lv}` + (starOf(k) > oldStar ? ` · ★${starOf(k)} 승급!` : '');
+      pendingAbsorb = null; sel = -1; renderBoard(); updateHud(); renderField(); promoFlow(k);
     }
     // ★2 클래스 선택 / ★3 최종 승급(각성 or 숙련) 팝업
     function openChoice(title, text, opts) {
@@ -1158,13 +1204,10 @@
     }
     function promoFlow(u) {
       const st = starOf(u), done = msg => { $('absorbChoice').classList.remove('show'); applyStats(u); battleMsg.textContent = msg; renderBoard(); renderField(); updateHud(); promoFlow(u); };
-      if (st >= 2 && !u.sub) {
-        openChoice('⭐ 클래스 선택', `${u.icon} ${u.name} ★2 승급! 클래스를 고르세요 (변경 불가)`,
-          Object.keys(SUBS).map(k => ({ l: SUBS[k].n, s: SUBS[k].d, f: () => { u.sub = k; dexAdd('s', k); done(`${u.icon}${u.name} → ${SUBS[k].n}!`); } })));
-      } else if (st >= 3 && u.sub && !u.awake && !u.mast) {
-        openChoice('🌟 최종 승급', `${u.icon} ${u.name} ★3 승급! 최종 강화를 고르세요 (변경 불가)`, [
-          { l: '각성', s: '모든 스탯 ×1.5', f: () => { u.awake = true; done(`${u.icon}${u.name} 각성!`); } },
-          { l: '숙련', s: '클래스 스킬 주기 4초→2.5초 · 위력 ×1.5', f: () => { u.mast = true; done(`${u.icon}${u.name} 숙련!`); } }]);
+      if (st >= 2 && !u.sub && CTREE[u.name]) {
+        openChoice('⭐ 전직 루트 선택', `${u.icon} ${u.name} ★2 승급! 전직 루트를 고르세요 (변경 불가) · ★3에서 최종 클래스로 자동 진화해요`,
+          ['A', 'B'].map(r => ({ l: routeName(u, r, 0) + ' → ' + routeName(u, r, 1), s: fxDesc(FX[CTREE[u.name][r].fx][0]) + ' ▶ ★3: ' + fxDesc(FX[CTREE[u.name][r].fx][1]),
+            f: () => { u.sub = r; dexAdd('s', `${u.name}:${r}`); done(`${u.icon}${u.name} → ${classOf(u).n}!`); } })));
       }
     }
     function finishAbsorb(choice) {
@@ -1173,18 +1216,17 @@
       const fi = G.units.indexOf(f), bi = G.bench.indexOf(f);
       if (fi < 0 && bi < 0) { cancelAbsorb(); return; } // 재료가 이미 사라졌다면 중단
       p.oldStar = starOf(u);
-      // 흡수 확정: 레벨/성장치 적용 후 희생 유닛 제거
-      u.lv = Math.min(MAX_LV, u.lv + p.gain);
-      u.imp += 1 + (f.imp || 0) + p.duplicateCount + iLv('p_abs');
-      while (u.imp >= 5 && u.lv < MAX_LV) { u.imp -= 5; u.lv = Math.min(MAX_LV, u.lv + 1); }
+      const conv = choice?.type === 'convert';
+      u.lv = Math.min(MAX_LV, u.lv + p.base + (conv ? p.conv : 0));
       if (fi >= 0) G.units.splice(fi, 1); else G.bench.splice(bi, 1);
-      if (choice?.type === 'add') { u.traits.push(choice.trait); note = ` · 특성 계승: ${TRAITS[choice.trait].n}`; }
-      else if (choice?.type === 'replace') { const old = u.traits[choice.index]; u.traits[choice.index] = choice.trait; note = ` · ${TRAITS[old].n} → ${TRAITS[choice.trait].n}`; }
-      else if (choice?.type === 'convert') { u.imp += 2; while (u.imp >= 5 && u.lv < MAX_LV) { u.imp -= 5; u.lv = Math.min(MAX_LV, u.lv + 1); } note = ' · 성장치 전환'; }
+      if (p.mode === 'levelup') { const h = u.imps.find(x => x.id === p.id); h.lv = Math.min(5, h.lv + 1); note = ` · 각인 ${IMPR[p.id].n} LV${h.lv}`; dexAdd('t', p.id); }
+      else if (p.mode === 'equip') { u.imps.push({ id: p.id, lv: 1 }); note = ` · 각인 ${IMPR[p.id].n} 장착`; dexAdd('t', p.id); }
+      else if (choice?.type === 'swap') { const old = u.imps[choice.index]; u.imps[choice.index] = { id: p.id, lv: 1 }; note = ` · ${IMPR[old.id].n} → ${IMPR[p.id].n}`; dexAdd('t', p.id); }
+      else if (conv) note = ` · 변환 +${p.conv}`;
       applyStats(u);
       $('absorbChoice').classList.remove('show');
       const starUp = starOf(u) > p.oldStar;
-      battleMsg.textContent = `${p.name} 흡수 완료! ${u.icon}${u.name} Lv${u.lv}` + (starUp ? ` · ★${starOf(u)} 승급!` : '') + note;
+      battleMsg.textContent = `${p.name} 흡수 완료! ${u.icon}${u.name} Lv${u.lv}` + (starUp ? ` · ★${starOf(u)} 승급!` : '') + (starUp && u.sub && starOf(u) >= 3 ? ` · ${classOf(u).n} 진화!` : '') + note;
       try { navigator.vibrate && navigator.vibrate(starUp ? [50, 30, 80] : 40); } catch (e) {}
       pendingAbsorb = null; sel = -1; renderBoard(); updateHud(); renderField();
       promoFlow(u);
@@ -1277,7 +1319,7 @@
       const d = dragInfo;
       dragInfo = null;
       clearFieldDragUI();
-      if (!d.moved) { if (d.fromField) { detIdx = d.index; openDetail(); } return; }
+      if (!d.moved) return;
       suppressBoardClickUntil = Date.now() + 400;
 
       // 1) 흡수 모드
@@ -1337,7 +1379,7 @@
       }
     });
     function renderBoard() {
-      const card = (u, i, bench) => `<div class="unit-card${bench ? ' bench' : ''}${u.adv ? ' adv' : ''}${u.leg ? ' leg' : ''}${u.isNew ? ' new' : ''}${i === sel ? ' sel' : ''}${u.lock ? ' locked' : ''}" data-i="${i}" title="${u.lock ? '잠금됨' : '유닛'}">${u.lock ? '<i class="lk">🔒</i>' : ''}${u.icon}<div class="name">${u.leg ? '🌈' : u.adv ? '✨' : ''}${u.name}</div><div class="lv">${u.lv ? 'Lv' + u.lv : ''}${starOf(u) ? ' ' + '★'.repeat(starOf(u)) : ''}${vrTag(u)}</div></div>`;
+      const card = (u, i, bench) => `<div class="unit-card${bench ? ' bench' : ''}${u.adv ? ' adv' : ''}${u.leg ? ' leg' : ''}${u.isNew ? ' new' : ''}${i === sel ? ' sel' : ''}${u.lock ? ' locked' : ''}" data-i="${i}" title="${u.lock ? '잠금됨' : '유닛'}">${u.lock ? '<i class="lk">🔒</i>' : ''}${u.icon}<div class="name">${u.leg ? '🌈' : u.adv ? '✨' : ''}${u.name}</div><div class="lv">Lv${u.lv}<br>${'★'.repeat(starOf(u))}${u.sub ? ' ' + (classOf(u)?.n || '') : ''}<br><span style="color:#a78bfa">${slotDots(u)}</span></div></div>`;
       const hasOverflow = G.bench.length > 0;
       const benchHtml = G.bench.length
         ? `<div class="grp w">후방 대기 ${G.bench.length}</div>${G.bench.map((u, j) => card(u, 100 + j, true)).join('')}`
@@ -1363,7 +1405,7 @@
     }
     function allyTag(u) {
       const tier = u.leg ? '🌈' : u.adv ? '✨' : '';
-      return `<div class="ally-tag${u.leg ? ' leg' : u.adv ? ' adv' : ''}">${tier}Lv${u.lv}${u.lock ? '🔒' : ''}<br>${'★'.repeat(starOf(u))}${u.sub ? ' ' + SUBS[u.sub].n : ''}</div>`;
+      return `<div class="ally-tag${u.leg ? ' leg' : u.adv ? ' adv' : ''}">${tier}Lv${u.lv}${u.lock ? '🔒' : ''}<br>${'★'.repeat(starOf(u))}${u.sub ? ' ' + (classOf(u)?.n || '') : ''}<br>${slotDots(u)}</div>`;
     }
     function ensureUnitPos(u, i) {
       // 좌표 없으면 기본 배치 (앞쪽일수록 fx 높음, 세로로 살짝 분산)
@@ -1474,7 +1516,7 @@
         Object.assign(b, { boss: st.boss.k, bi: mid ? 9 : 6.5, bs: mid ? 9 : 6.5, pow: mid ? 0.7 : 1, bname, dr: st.dr || 0, dodge: st.dodge || 0 });
         G.enemies.push(b);
       }
-      G.units.forEach(u => { u.rev = false; u.fs = !!u.firstS; u.sh = u.shieldP ? u.maxHp * u.shieldP : 0; if (u.firstS) u.cd = 0; if (u.adv) u.ask = ADV[u.name].cd; });
+      G.units.forEach(u => { u.rv2 = false; u.rvT = 0; u.bu = false; u.od = false; u.hits = 0; u.rev = false; u.fs = !!u.firstS; u.sh = u.shieldP ? u.maxHp * u.shieldP : 0; if (u.firstS) u.cd = 0; if (u.adv) u.ask = ADV[u.name].cd; });
       G.phase = 'fight'; sel = -1;
       startBtn.disabled = true;
       const tag = boss ? `⚠ ${bname}` : pre ? '보스 전초전' : w % 5 === 4 ? '강화 적 출현' : '';
@@ -1523,6 +1565,7 @@
       const dt = 0.1, now = performance.now(), st = themeOf();
       G.units.forEach(u => {
         if (u.regen) u.hp = Math.min(u.maxHp, u.hp + u.maxHp * u.regen * dt);
+        if (u.rvT > 0) u.rvT -= dt;
         if (u.stun > 0) { u.stun -= dt; return; } // 기절: 행동 불가
         u.cd -= dt;
         if (u.cd <= 0 && G.enemies.some(e => e.hp > 0)) {
@@ -1540,33 +1583,60 @@
             if (u.exec && target.hp / target.maxHp < 0.3) dmg *= 1 + u.exec;
             if (u.fs) { dmg *= 2; u.fs = false; }
             const crit = u.crit && Math.random() < u.crit; if (crit) dmg *= 2;
+            const I = u.iL || {};
+            if (I.buildup) { if (u.bu) { dmg *= 1 + lerp(I.buildup, 0.25, 0.8); u.bu = false; } else u.bu = true; }
+            if (I.overdrive && u.od) { dmg *= 1 + lerp(I.overdrive, 1, 3); u.od = false; }
+            if (u.rvT > 0) dmg *= 1 + u.rvA;
+            if (target.soul > 0) dmg *= 1.5;
             target.hp -= dmg;
             if (u.steal) u.hp = Math.min(u.maxHp, u.hp + dmg * u.steal);
             if (u.burn) { target.burn = 3; target.burnDps = Math.max(target.burnDps || 0, u.atk * u.burn); }
             pop(dmg, 'R', crit ? '#fbbf24' : '#e8eaf0');
+            u.hits = (u.hits || 0) + 1;
+            const alive = () => G.enemies.filter(x => x !== target && x.hp > 0);
+            const hitE = (e, m, col) => { const d = u.atk * m * (1 - (e.dr || 0)) * (e.soul > 0 ? 1.5 : 1); e.hp -= d; e.hitAt = now; pop(d, 'R', col || '#a78bfa'); };
+            if (I.volley && u.hits % 3 === 0) hitE(target, lerp(I.volley, 0.4, 1.3));
+            if (I.pierce) alive().slice(0, Math.round(lerp(I.pierce, 1, 3))).forEach(e => hitE(e, lerp(I.pierce, 0.25, 0.35)));
+            if (I.transfer) alive().slice(0, Math.round(lerp(I.transfer, 1, 3))).forEach(e => { e.hp -= dmg * 0.3; e.hitAt = now; });
+            if (I.bash && Math.random() < 0.18) target.stun = Math.max(target.stun || 0, lerp(I.bash, 0.5, 1.3));
+            if (I.blind && Math.random() < 0.16) target.blind = lerp(I.blind, 0.4, 1.3);
+            if (I.knockback && Math.random() < 0.18) target.cd += lerp(I.knockback, 0.8, 2);
+            if (I.poison && Math.random() < 0.25) { target.psn = Math.round(lerp(I.poison, 2, 5)); target.psnPct = lerp(I.poison, 0.012, 0.02); }
+            if (I.shrink && Math.random() < lerp(I.shrink, 0.1, 0.2)) { target.shr = 3; target.shrP = lerp(I.shrink, 0.2, 0.4); }
+            if (I.soulsplit) target.soul = lerp(I.soulsplit, 3, 5);
+            if (I.meteor && Math.random() < 0.1) G.enemies.filter(x => x.hp > 0).slice(0, 3).forEach(e => hitE(e, lerp(I.meteor, 1.8, 3), '#fb923c'));
+            if (I.skyward && Math.random() < 0.12) { target.stun = Math.max(target.stun || 0, lerp(I.skyward, 0.8, 1.2)); hitE(target, lerp(I.skyward, 1.1, 2), '#7dd3fc'); }
+            if (I.quake && Math.random() < 0.12) G.enemies.filter(x => x.hp > 0).forEach(e => { hitE(e, lerp(I.quake, 1, 1.8), '#f59e0b'); e.stun = Math.max(e.stun || 0, 1); });
+            if (I.overdrive && target.hp <= 0) u.od = true;
             if (u.cleave && Math.random() < u.cleave) { const o = G.enemies.filter(x => x !== target && x.hp > 0); if (o.length) { const t2 = o[Math.floor(Math.random() * o.length)]; t2.hp -= dmg * 0.5 * (1 - (t2.dr || 0)); t2.hitAt = now; } }
           }
         }
-        if (u.sub && G.enemies.length) { u.sk -= dt; if (u.sk <= 0) { u.sk = u.mast ? 2.5 : 4; useSkill(u, now); } }
+        if (u.sub && G.enemies.length) { u.sk -= dt; if (u.sk <= 0) { u.sk = 4; useSkill(u, now); } }
         if (u.adv && G.enemies.length) { u.ask -= dt; if (u.ask <= 0) { u.ask = ADV[u.name].cd; advSkill(u, now); } }
       });
       G.enemies = G.enemies.filter(e => e.hp > 0);
 
       G.enemies.forEach(e => {
         if (e.burn > 0) { e.burn -= dt; e.hp -= e.burnDps * dt; } // 상태이상: 화상
+        if (e.psn > 0) { e.psn -= dt; e.hp -= e.maxHp * e.psnPct * 2 * dt * (e.boss ? 0.25 : 1); } // 중독 (보스는 1/4)
+        if (e.soul > 0) e.soul -= dt;
+        if (e.shr > 0) e.shr -= dt;
+        if (e.blind > 0) e.blind -= dt;
         if (e.stun > 0) { e.stun -= dt; return; } // 상태이상: 기절
         if (e.boss) { e.bs -= dt; if (e.bs <= 0) { e.bs = e.bi; bossAct(e, now); } }
         e.cd -= dt;
         if (e.cd <= 0) {
-          e.cd = e.spd;
-          if (G.units.length) {
-            const tg = pickTarget(e, st);
-            hurt(tg, e.atk * (tg.name === 'Guard' ? 0.75 : 1), e); pop(e.atk, 'L', '#f87171');
+          e.cd = e.spd * (e.shr > 0 ? 1.25 : 1);
+          if (e.blind > 0 && G.units.length) pop(0, 'L', '#9aa3c0'); // 실명: 공격 빗나감
+          else if (G.units.length) {
+            const tg = pickTarget(e, st), sm = e.shr > 0 ? 1 - e.shrP : 1;
+            hurt(tg, e.atk * sm * (tg.name === 'Guard' ? 0.75 : 1), e); pop(e.atk * sm, 'L', '#f87171');
             if (e.splash) G.units.forEach(a => { if (a !== tg) hurt(a, e.atk * e.splash, null); });
           } else G.baseHp -= e.atk;
         }
       });
       if (st.burnU && G.units.length) { const bd = (0.5 + 0.12 * G.wave) * DIFFS[G.diff].atk * dt; G.units.forEach(u => u.hp -= bd); } // 붉은 지옥: 지속 화염
+      G.units.forEach(u => { if (u.hp <= 0 && u.iL && u.iL.revival && !u.rv2) { u.rv2 = true; u.hp = u.maxHp * lerp(u.iL.revival, 0.4, 0.8); u.sh = 0; u.rvT = lerp(u.iL.revival, 8, 16); u.rvA = lerp(u.iL.revival, 0.2, 0.4); pop(u.hp, 'L', '#fde68a'); } }); // 부활 각인
       G.units.forEach(u => { if (u.hp <= 0 && u.leg && u.name === 'Phoenix' && !u.rev) { u.rev = true; u.hp = u.maxHp * 0.5; u.sh = 0; pop(u.maxHp * 0.5, 'L', '#fb923c'); } }); // 불사조 부활
       const before = G.units.length;
       G.units = G.units.filter(u => u.hp > 0);
@@ -1624,6 +1694,42 @@
     }
 
     // ========== 특성 / 서브클래스 / 스킬 / 유닛 상세 ==========
+    const lerp = (lv, a, b) => a + (b - a) * (Math.min(5, Math.max(1, lv)) - 1) / 4;
+    const pc = v => Math.round(v), f1 = v => v.toFixed(1);
+    const TIER_VAL = { n: 1, a: 2, r: 3, l: 4 }, CONV_BONUS = { n: 1, a: 2, r: 3, l: 5 };
+    const impCap = u => ({ n: 1, a: 2, r: 3, l: 4 })[tierOf(u)]; // 등급별 각인 슬롯
+    const IMPR = {
+      buildup:  { n: '축적',   d: l => `기본 공격 후 다음 기본 공격의 공격력 +${pc(lerp(l, 25, 80))}%` },
+      volley:   { n: '연사',   d: l => `3번째 기본 공격마다 같은 대상에 공격력 ${pc(lerp(l, 40, 130))}% 추가 타격` },
+      pierce:   { n: '관통',   d: l => `기본 공격이 뒤쪽 적 최대 ${pc(lerp(l, 1, 3))}명을 관통해 ${pc(lerp(l, 25, 35))}% 피해` },
+      transfer: { n: '전이',   d: l => `공격 시 입힌 피해의 30%가 다른 적 ${pc(lerp(l, 1, 3))}명에게 전이` },
+      overdrive:{ n: '폭주',   d: l => `적 처치 후 다음 기본 공격의 공격력 +${pc(lerp(l, 100, 300))}%` },
+      bash:     { n: '강타',   d: l => `공격 시 18% 확률로 대상 ${f1(lerp(l, 0.5, 1.3))}초 기절` },
+      blind:    { n: '실명',   d: l => `공격 시 16% 확률로 대상 ${f1(lerp(l, 0.4, 1.3))}초 실명 (공격 빗나감)` },
+      knockback:{ n: '밀치기', d: l => `공격 시 18% 확률로 대상을 밀쳐 다음 공격 ${f1(lerp(l, 0.8, 2))}초 지연` },
+      poison:   { n: '중독',   d: l => `공격 시 25% 확률로 ${pc(lerp(l, 2, 5))}초간 중독 (0.5초마다 최대 체력의 ${f1(lerp(l, 1.2, 2))}%)` },
+      block:    { n: '방어',   d: l => `받는 공격을 ${pc(lerp(l, 15, 30))}% 확률로 방어 (무효)` },
+      shrink:   { n: '축소',   d: l => `공격 시 ${pc(lerp(l, 10, 20))}% 확률로 3초간 대상 축소 (공격력 -${pc(lerp(l, 20, 40))}%, 공속 저하)` },
+      meteor:   { n: '메테오', d: l => `공격 시 10% 확률로 운석 낙하: 적 최대 3명에게 ${pc(lerp(l, 180, 300))}% 피해` },
+      revival:  { n: '부활',   d: l => `웨이브마다 1회, 쓰러지면 체력 ${pc(lerp(l, 40, 80))}%로 부활 + ${pc(lerp(l, 8, 16))}초간 공격력 +${pc(lerp(l, 20, 40))}%` },
+      soulsplit:{ n: '영혼 분리', d: l => `공격 시 대상의 영혼을 ${pc(lerp(l, 3, 5))}초간 분리: 대상이 받는 피해 +50%` },
+      skyward:  { n: '승천격', d: l => `공격 시 12% 확률로 대상을 ${f1(lerp(l, 0.8, 1.2))}초 띄우고 ${pc(lerp(l, 110, 200))}% 피해` },
+      quake:    { n: '지진',   d: l => `공격 시 12% 확률로 모든 적에게 ${pc(lerp(l, 100, 180))}% 피해 + 1초 기절` },
+    };
+    // 제물의 계열·등급 → 넘겨주는 고유 각인 (진화·전직과 무관)
+    const IMPR_OF = { 'n:Warrior': 'buildup', 'n:Archer': 'volley', 'n:Guard': 'pierce', 'n:Mage': 'transfer', 'n:Cavalry': 'overdrive',
+      'a:Warrior': 'bash', 'a:Archer': 'blind', 'a:Guard': 'knockback', 'a:Mage': 'poison', 'a:Cavalry': 'block',
+      'r:Special': 'shrink', 'l:Dragon': 'meteor', 'l:Seraph': 'revival', 'l:Vampire': 'soulsplit', 'l:Storm': 'skyward', 'l:Phoenix': 'quake' };
+    const imprOf = u => IMPR_OF[tierOf(u) + ':' + u.name];
+    const slotDots = u => '◆'.repeat(u.imps.length) + '◇'.repeat(Math.max(0, impCap(u) - u.imps.length)); // 각인 슬롯 (채움/빈칸)
+    function slotBoxes(u, p) { // p = 흡수 미리보기(선택)
+      const cap = impCap(u), b = [];
+      u.imps.forEach(x => { const up = p && p.mode === 'levelup' && x.id === p.id; b.push(`<span class="slot on${up ? ' new' : ''}">${IMPR[x.id].n} LV${x.lv}${up ? ' → ' + Math.min(5, x.lv + 1) : ''}</span>`); });
+      if (p && p.mode === 'equip') b.push(`<span class="slot new">＋ ${IMPR[p.id].n} LV1</span>`);
+      for (let i = b.length; i < cap; i++) b.push('<span class="slot">빈 칸</span>');
+      if (p && p.mode === 'full') b.push(`<span class="slot new">새 각인 ${IMPR[p.id].n} (슬롯 없음)</span>`);
+      return `<div class="slots">${b.join('')}</div>`;
+    }
     const TRAITS = [
       { n: '강인',   d: 'HP +30%',            hp: 1.3 },
       { n: '날카로움', d: '공격력 +25%',        atk: 1.25 },
@@ -1667,6 +1773,7 @@
     const vrTag = u => { const v = ((u.vh || 1) + (u.va || 1)) / 2; return v >= 1.1 ? '<span class="vr">▲▲</span>' : v >= 1.03 ? '<span class="vr">▲</span>' : v <= 0.9 ? '<span class="vr dn">▼</span>' : ''; };
     function hurt(u, dmg, src) {
       if (u.dodge && Math.random() < Math.min(0.5, u.dodge)) { pop(0, 'L', '#9aa3c0'); return; }
+      if (u.iL && u.iL.block && Math.random() < lerp(u.iL.block, 0.15, 0.3)) { pop(0, 'L', '#9aa3c0'); return; } // 방어 각인
       const raw = dmg;
       if (u.sh > 0) { const a = Math.min(u.sh, dmg); u.sh -= a; dmg -= a; }
       u.hp -= dmg; u.hitAt = performance.now();
@@ -1700,23 +1807,60 @@
       else if (u.name === 'Cavalry') { hit(low, 2); low.stun = 1.5; }
       else G.units.forEach(a => a.cd = 0);
     }
-    const SUBS = {
-      berserk: { n: '광전사', d: '공격력 +30% · 4초마다 3배 피해 + 기절 1.5초', atk: 1.3 },
-      bulwark: { n: '수호자', d: 'HP +30% · 4초마다 아군 전체 HP 15% 회복', hp: 1.3 },
-      hunter: { n: '추적자', d: '공격 간격 -15% · 4초마다 체력 가장 높은 적에게 2.5배 피해', spd: 0.85 },
+    // 유닛별 전직 트리: ★2에서 A/B 루트 선택 → ★3에서 최종 클래스로 자동 진화 (Slotbound 방식)
+    // n=[2성 클래스, 3성 클래스], an=Advanced 유닛 전용 이름, fx=능력/스킬 프리셋
+    const FX = {
+      bruiser:  [{ atk: 1.25, hp: 1.1, sk: { k: 'smash', m: 2.5, st: 1 } },   { atk: 1.5, hp: 1.25, sk: { k: 'smash', m: 3.5, st: 1.5 } }],
+      assassin: [{ atk: 1.3, spd: 0.92, sk: { k: 'snipe', m: 3 } },           { atk: 1.55, spd: 0.85, sk: { k: 'snipe', m: 4.5 } }],
+      tank:     [{ hp: 1.4, sk: { k: 'shield', p: 0.12 } },                   { hp: 1.7, atk: 1.15, sk: { k: 'shield', p: 0.2 } }],
+      healer:   [{ hp: 1.15, sk: { k: 'heal', p: 0.12 } },                    { hp: 1.3, atk: 1.1, sk: { k: 'heal', p: 0.2 } }],
+      volley:   [{ atk: 1.15, spd: 0.9, sk: { k: 'multi', n: 3, m: 1.3 } },   { atk: 1.3, spd: 0.85, sk: { k: 'multi', n: 5, m: 1.6 } }],
+      nuker:    [{ atk: 1.2, sk: { k: 'aoe', m: 1 } },                        { atk: 1.4, sk: { k: 'aoe', m: 1.6 } }],
+      charger:  [{ atk: 1.2, hp: 1.15, sk: { k: 'smash', m: 2, st: 1.5 } },   { atk: 1.4, hp: 1.3, sk: { k: 'smash', m: 3, st: 2 } }],
+      rally:    [{ spd: 0.9, sk: { k: 'rally' } },                            { spd: 0.8, atk: 1.15, sk: { k: 'rally', heal: 0.05 } }],
     };
+    const CTREE = {
+      Warrior: { A: { n: ['병사', '기사'], an: ['엘프 병사', '엘프 기사'], fx: 'bruiser' },            B: { n: ['해적', '해적왕'], an: ['사수 병사', '바그'], fx: 'assassin' } },
+      Archer:  { A: { n: ['석궁수', '장궁병'], an: ['엘프 궁수', '하이 엘프'], fx: 'volley' },          B: { n: ['순찰자', '명사수'], an: ['레인저', '데드아이'], fx: 'assassin' } },
+      Guard:   { A: { n: ['창위병', '근위병'], an: ['엘프 보병', '하이 엘프 보병'], fx: 'tank' },      B: { n: ['약탈자', '무법자'], an: ['바이킹', '바바리안'], fx: 'bruiser' } },
+      Mage:    { A: { n: ['주술사', '대주술사'], an: ['엘프 법사', 'Elf Sage'], fx: 'nuker' },          B: { n: ['치유술사', '대사제'], an: ['야생 법사', 'Primitive Mage'], fx: 'healer' } },
+      Cavalry: { A: { n: ['돌격병', '중기병'], an: ['Elf Cavalry', 'High Elf Cavalry'], fx: 'charger' }, B: { n: ['도끼 기병', '무법 기병'], an: ['Savage Cavalry', 'Raging Cavalry'], fx: 'volley' } },
+      Special: { A: { n: ['Trickster', 'Illusionist'], fx: 'rally' },                                  B: { n: ['Ferret Tamer', 'Ringmaster'], fx: 'nuker' } },
+      Dragon:  { A: { n: ['용기사', '용왕'], fx: 'bruiser' },    B: { n: ['화염룡', '멸화룡'], fx: 'nuker' } },
+      Seraph:  { A: { n: ['치천사', '대천사'], fx: 'healer' },   B: { n: ['심판자', '대심판관'], fx: 'assassin' } },
+      Vampire: { A: { n: ['흡혈귀족', '혈왕'], fx: 'assassin' }, B: { n: ['박쥐군주', '야행제왕'], fx: 'volley' } },
+      Storm:   { A: { n: ['뇌신', '천둥제'], fx: 'volley' },     B: { n: ['폭풍술사', '태풍왕'], fx: 'nuker' } },
+      Phoenix: { A: { n: ['불꽃술사', '홍염제'], fx: 'nuker' },  B: { n: ['재생의 새', '부활의 불사조'], fx: 'healer' } },
+    };
+    const CLASS_TOTAL = Object.keys(CTREE).length * 2;
+    const routeName = (u, r, t) => { const c = CTREE[u.name]?.[r]; return c ? ((u.adv && !u.leg && c.an) ? c.an : c.n)[t] : '?'; };
+    function fxDesc(f) {
+      const p = [];
+      if (f.atk) p.push(`공격력 +${Math.round((f.atk - 1) * 100)}%`);
+      if (f.hp) p.push(`HP +${Math.round((f.hp - 1) * 100)}%`);
+      if (f.spd) p.push(`공격 간격 -${Math.round((1 - f.spd) * 100)}%`);
+      const k = f.sk;
+      p.push('4초마다 ' + ({ smash: `체력 높은 적에게 ×${k.m}${k.st ? ' + 기절 ' + k.st + '초' : ''}`, snipe: `체력 낮은 적에게 ×${k.m}`, multi: `적 ${k.n}기에게 ×${k.m}`, aoe: `적 전체 ×${k.m}`, heal: `아군 전체 HP ${Math.round(k.p * 100)}% 회복`, shield: `아군 전체에 최대 HP ${Math.round(k.p * 100)}% 보호막`, rally: '아군 전체 즉시 공격 준비' + (k.heal ? ` + HP ${Math.round(k.heal * 100)}% 회복` : '') })[k.k]);
+      return p.join(' · ');
+    }
+    // 유닛의 현재 클래스 (u.sub = 루트 'A'/'B', 성급이 3이면 최종 클래스)
+    function classOf(u) {
+      const r = u.sub && CTREE[u.name]?.[u.sub]; if (!r) return null;
+      const t = starOf(u) >= 3 ? 1 : 0, f = FX[r.fx][t];
+      return { n: routeName(u, u.sub, t), mod: f, sk: f.sk, d: fxDesc(f) };
+    }
     function useSkill(u, now) {
-      const pw = u.mast ? 1.5 : 1; // 숙련: 스킬 위력 ×1.5
-      if (u.sub === 'berserk') {
-        const e = G.enemies.reduce((best, x) => (x.hp / x.maxHp < best.hp / best.maxHp ? x : best), G.enemies[0]);
-        if (e) { e.hp -= u.atk * 3 * pw; e.stun = 1.5; e.hitAt = now; pop(u.atk * 3 * pw, 'R', '#fbbf24'); showSkillPop(`${u.icon} 광전사 일격`); }
-      } else if (u.sub === 'hunter') {
-        const e = G.enemies.reduce((best, x) => (x.hp > best.hp ? x : best), G.enemies[0]);
-        if (e) { e.hp -= u.atk * 2.5 * pw; e.hitAt = now; pop(u.atk * 2.5 * pw, 'R', '#fbbf24'); showSkillPop(`${u.icon} 추적 사격`); }
-      } else {
-        G.units.forEach(a => a.hp = Math.min(a.maxHp, a.hp + a.maxHp * 0.15 * pw));
-        showSkillPop(`${u.icon} 수호 치유`);
-      }
+      const c = classOf(u); if (!c || !G.enemies.length) return;
+      const k = c.sk, es = G.enemies;
+      const dmg = (e, m) => { e.hp -= u.atk * m; e.hitAt = now; pop(u.atk * m, 'R', '#fbbf24'); };
+      if (k.k === 'smash') { const e = es.reduce((b, x) => (x.hp > b.hp ? x : b), es[0]); dmg(e, k.m); if (k.st) e.stun = k.st; }
+      else if (k.k === 'snipe') { const e = es.reduce((b, x) => (x.hp < b.hp ? x : b), es[0]); dmg(e, k.m); }
+      else if (k.k === 'multi') es.slice(0, k.n).forEach(e => dmg(e, k.m));
+      else if (k.k === 'aoe') es.forEach(e => dmg(e, k.m));
+      else if (k.k === 'heal') G.units.forEach(a => a.hp = Math.min(a.maxHp, a.hp + a.maxHp * k.p));
+      else if (k.k === 'shield') G.units.forEach(a => { a.sh = (a.sh || 0) + a.maxHp * k.p; });
+      else if (k.k === 'rally') { G.units.forEach(a => { a.cd = 0; if (k.heal) a.hp = Math.min(a.maxHp, a.hp + a.maxHp * k.heal); }); }
+      showSkillPop(`${u.icon} ${c.n}`);
     }
 
     let detIdx = -1;
@@ -1730,14 +1874,18 @@
         `<div class="dcard${cls}"><div class="big">${u.icon}</div><div style="flex:1;min-width:0">` +
           `<div class="nm">${u.name} <small>${tierN}${detIdx >= 100 ? ' · 대기' : ''}</small></div>` +
           `<div class="stars">${'★'.repeat(st)}${'☆'.repeat(3 - st)} <small>Lv ${u.lv}/${MAX_LV} · 다음 ★ ${nx ? 'Lv ' + nx : '최대'}</small></div>` +
-          `<div class="st"><span>❤️ HP ${u.maxHp}</span><span>⚔️ ATK ${u.atk}</span><span>⏱ 간격 ${(u.spd * u.spdM).toFixed(2)}s</span><span>성장치 ${u.imp}/5</span><span>편차 HP ${dv(u.vh)}</span><span>편차 ATK ${dv(u.va)}</span></div>` +
+          `<div class="st"><span>❤️ HP ${u.maxHp}</span><span>⚔️ ATK ${u.atk}</span><span>⏱ 간격 ${(u.spd * u.spdM).toFixed(2)}s</span><span>각인 ${u.imps.length}/${impCap(u)}</span><span>편차 HP ${dv(u.vh)}</span><span>편차 ATK ${dv(u.va)}</span></div>` +
         `</div></div>` +
+        `<div style="margin:-2px 0 8px"><div style="font-size:11px;color:#9aa3c0">각인 슬롯 ${u.imps.length}/${impCap(u)}</div>${slotBoxes(u)}</div>` +
         (u.adv ? `<div class="shop-row"><div class="info">${u.leg ? '🌈 전설' : '✨'} 전용 스킬 · ${ADV[u.name].n}<small>${ADV[u.name].d}</small></div></div>` : '') +
-        `<div class="shop-row"><div class="info">특성 ${u.traits.length}/${traitCap(u)}<small>${u.traits.map(i => TRAITS[i].n + ': ' + TRAITS[i].d).join('<br>')}</small></div></div>` +
-        `<div class="shop-row"><div class="info">${u.sub ? '클래스 · ' + SUBS[u.sub].n : '클래스'}<small>${u.sub ? SUBS[u.sub].d : (st >= 2 ? '하나를 선택하세요 (변경 불가)' : '★2부터 선택 가능 (Lv ' + STAR_AT[tierOf(u)][0] + ')')}</small></div>` +
-          (!u.sub && st >= 2 ? Object.keys(SUBS).map(k => `<button class="buy" data-sub="${k}">${SUBS[k].n}</button>`).join('') : '') + `</div>` +
-        `<div class="shop-row"><div class="info">최종 승급<small>${u.awake ? '각성 완료 (스탯 ×1.5)' : u.mast ? '숙련 완료 (스킬 주기 단축 · 위력 ×1.5)' : '★3(Lv ' + STAR_AT[tierOf(u)][1] + ') + 클래스 필요 · 각성 또는 숙련 택1'}</small></div>` +
-          (!u.awake && !u.mast && st >= 3 && u.sub ? '<button class="buy" data-awake="1">각성</button><button class="buy" data-mast="1">숙련</button>' : '') + `</div>` +
+        `<div class="shop-row"><div class="info">각인 ${u.imps.length}/${impCap(u)}<small>${u.imps.map(x => IMPR[x.id].n + ' LV' + x.lv + ': ' + IMPR[x.id].d(x.lv)).join('<br>') || '없음 (다른 유닛을 흡수하면 얻어요)'}</small></div></div>` +
+        `<div class="shop-row"><div class="info">제물로 쓰면<small>고유 각인 ${imprOf(u) ? IMPR[imprOf(u)].n + ' (LV1): ' + IMPR[imprOf(u)].d(1) : '-'}</small></div></div>` +
+        (() => {
+          const cl = classOf(u), tr = CTREE[u.name];
+          if (!tr) return '';
+          return `<div class="shop-row"><div class="info">${cl ? '클래스 · ' + cl.n : '클래스 (전직)'}<small>${cl ? cl.d + (st < 3 ? ' · ★3 진화: ' + routeName(u, u.sub, 1) : ' · 최종 클래스') : (st >= 2 ? '루트를 선택하세요 (변경 불가)' : '★2에서 A/B 루트 선택 (Lv ' + STAR_AT[tierOf(u)][0] + ') → ★3 최종 진화')}</small></div>` +
+            (!u.sub && st >= 2 ? ['A', 'B'].map(r => `<button class="buy" data-sub="${r}">${routeName(u, r, 0)}</button>`).join('') : '') + `</div>`;
+        })() +
         (detIdx >= 100 ? `<div class="shop-row"><div class="info">출전<small>${G.units.length >= maxUnits() ? '출전 자리가 가득 찼어요 (필드 유닛 위로 드래그해 흡수하세요)' : '필드에 내보냅니다'}</small></div><button class="buy" data-deploy="1" ${G.phase !== 'prep' || G.units.length >= maxUnits() ? 'disabled' : ''}>출전</button></div>` : '') +
         `<div class="shop-row"><div class="info">잠금<small>잠그면 흡수 재료로 쓰이지 않아요</small></div><button class="buy" data-lock="1">${u.lock ? '🔒 해제' : '🔓 잠금'}</button></div>`;
     }
@@ -1745,7 +1893,7 @@
       const b = e.target.closest('.buy'), u = getU(detIdx);
       if (!b || !u) return;
       const msg = $('detailMsg');
-      if (b.dataset.sub) { u.sub = b.dataset.sub; dexAdd('s', u.sub); applyStats(u); msg.textContent = `${SUBS[u.sub].n} 선택!`; }
+      if (b.dataset.sub) { u.sub = b.dataset.sub; dexAdd('s', `${u.name}:${u.sub}`); applyStats(u); msg.textContent = `${classOf(u).n} 선택!`; }
       else if (b.dataset.awake) { u.awake = true; applyStats(u); updateHud(); msg.textContent = '각성!'; }
       else if (b.dataset.deploy) { if (G.phase === 'prep' && placeFromBench(detIdx - 100)) { closeDetail(); battleMsg.textContent = '대기 유닛 출전!'; } return; }
       else if (b.dataset.mast) { u.mast = true; applyStats(u); updateHud(); msg.textContent = '숙련!'; } else { u.lock = !u.lock; msg.textContent = u.lock ? '잠금' : '잠금 해제'; }
@@ -1797,8 +1945,8 @@
       return SYMBOLS.filter(x => !x.prism).map(x => META.best >= (x.need || 0)
           ? row(`${x.icon} ${x.name}`, META.dex.u.includes(x.name) ? `HP ${x.hp} · ATK ${x.atk}` : '아직 소환하지 못했어요')
           : row('🔒 ???', `Wave ${x.need} 도달 시 해금`)).join('') +
-        row('특성', TRAITS.map((t, i) => META.dex.t.includes(i) ? t.n : '???').join(' · ')) +
-        row('서브클래스', Object.keys(SUBS).map(k => META.dex.s.includes(k) ? SUBS[k].n : '???').join(' · ')) +
+        row('각인', Object.keys(IMPR).map(id => META.dex.t.includes(id) ? IMPR[id].n : '???').join(' · ')) +
+        row('전직 루트', `${META.dex.s.filter(x => x.includes(':')).length}/${CLASS_TOTAL}`) +
         row('✨ Advanced', SYMBOLS.filter(x => !x.prism).map(x => META.dex.a.includes(x.name) ? '✨' + x.name : '???').join(' · ')) +
         row('🌈 전설 (Prism)', META.best >= 3 ? LEGENDS.map(l => META.dex.l.includes(l.name) ? l.icon + l.name : '???').join(' · ') : 'Wave 3 도달 시 Prism 심볼 해금') +
         row('기록', `최고 Wave ${META.best}`);
@@ -1854,7 +2002,7 @@
       { id: 'p_spin', icon: '🎰', name: '슬롯 조율기',  d: l => `웨이브 클리어 스핀 +${l}회`, unl: 1 },
       { id: 'p_spd',  icon: '👢', name: '신속의 장화',  d: l => `공격 간격 -${4 * l}%`, ruby: 25 },
       { id: 'p_ess',  icon: '🔷', name: '정수 결정',    d: l => `웨이브 클리어 정수 +${l}`, ruby: 30 },
-      { id: 'p_abs',  icon: '🧪', name: '흡수 촉매',    d: l => `흡수할 때 성장치 +${l}`, ruby: 40 },
+      { id: 'p_abs',  icon: '🧪', name: '흡수 촉매',    d: l => `흡수할 때 흡수 LV +${l}`, ruby: 40 },
       { id: 'p_int',  icon: '📈', name: '복리 장부',    d: l => `골드 이자율 +${3 * l}%p (기본 5%)`, ruby: 40 },
     ].map(x => Object.assign(x, { passive: true }));
     const passiveOpen = p => p.unl || META.unl[p.id];
