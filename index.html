@@ -2,8 +2,8 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>SLOT BATTLE - Slot v8 (Full)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <title>SLOT BATTLE V2 - Mobile Rebuild</title>
   <style>
     * {
       margin: 0;
@@ -364,7 +364,10 @@
     .hp i { display: block; height: 100%; background: #4ade80; }
     .foe .hp i { background: #f87171; }
     .ally.hit .ico { transform: translateX(-5px); filter: brightness(2); }
-    .foe.hit .ico { transform: translateX(5px); filter: brightness(2); }
+    .foe.hit .ico { transform: translateX(5px); filter: brightness(2); animation: foeImpact .24s ease; }
+    .ally.attack .ico { animation: allyStrike .28s ease-in-out; filter: brightness(1.35) drop-shadow(0 0 7px rgba(96,165,250,.9)); }
+    @keyframes allyStrike { 0% { transform:translateX(0) scale(1); } 45% { transform:translateX(13px) scale(1.18); } 100% { transform:translateX(0) scale(1); } }
+    @keyframes foeImpact { 0%,100% { transform:translateX(0); } 30% { transform:translateX(5px) scale(1.12); } 65% { transform:translateX(-4px); } }
     .battle-msg { font-size: 12px; color: #9aa3c0; text-align: center; padding: 8px 14px 12px; min-height: 40px; }
     .unit-card { animation: none; }
     .unit-card.new { animation: unitIn 0.35s ease; }
@@ -400,6 +403,90 @@
     @keyframes popUp { to { transform: translateY(-30px); opacity: 0; } }
     .tab { font-size: 12px; padding: 8px 4px; }
     .rs-card .shop-list { min-width: 250px; }
+
+    /* ===== V2 MOBILE REBUILD ===== */
+    :root { color-scheme: dark; }
+    html, body { width:100%; height:100%; min-height:100%; }
+    body {
+      min-height:100dvh; height:100dvh; padding:0;
+      background: radial-gradient(ellipse at 50% 0%, #202b4d 0%, #0b1020 62%);
+      overscroll-behavior:none;
+    }
+    .phone {
+      width:min(100vw, 480px);
+      height:100dvh; max-height:100dvh;
+      border:0; border-radius:0;
+      display:flex; flex-direction:column;
+      box-shadow:none;
+      padding-top:env(safe-area-inset-top);
+      padding-bottom:env(safe-area-inset-bottom);
+    }
+    .top-bar { flex:0 0 48px; height:48px; gap:4px; padding:0 7px; font-size:clamp(10px,2.8vw,12px); }
+    .top-bar > span { padding:5px 6px; white-space:nowrap; }
+    .main-area { height:auto; flex:1; min-height:0; }
+    .battle-zone { min-height:0; overflow:hidden; }
+    .field { min-height:0; padding:10px 8px; gap:4px; }
+    .side { width:49%; gap:clamp(5px,1.5vw,10px); align-content:center; }
+    .actor { width:clamp(38px,11vw,54px); }
+    .actor .ico { font-size:clamp(23px,7vw,34px); line-height:1.2; }
+    .hp { height:5px; }
+    .battle-msg { min-height:38px; max-height:52px; overflow:auto; padding:7px 10px; }
+    .unit-board { flex:0 0 88px; height:88px; min-height:88px; padding:7px 9px; gap:7px; }
+    .unit-card { min-width:58px; height:70px; }
+    .bottom-bar { flex:0 0 64px; height:64px; gap:7px; padding:0 8px; }
+    .open-slot-btn { flex:1; min-width:0; padding:12px 8px; font-size:14px; }
+    .start-btn { padding:11px 10px; font-size:13px; white-space:nowrap; }
+    .shop-btn { flex:0 0 44px; width:44px; height:44px; }
+    .slot-panel { height:min(78%, 690px); height:min(78dvh, 690px); padding-bottom:env(safe-area-inset-bottom); }
+    .shop-panel { height:min(76dvh, 650px); }
+    .slot-body { min-height:0; align-items:center; gap:10px; padding:0 12px; }
+    .slot-grid { max-width:min(70vw, 330px); gap:clamp(5px,1.6vw,9px); }
+    .slot-cell { min-width:0; font-size:clamp(23px,7vw,34px); border-radius:clamp(8px,2.5vw,13px); }
+    .slide-bar-wrap { flex:0 0 44px; width:44px; }
+    .slide-track { height:min(31vh, 210px); height:min(31dvh, 210px); width:34px; }
+    .result-area { padding:8px 12px calc(12px + env(safe-area-inset-bottom)); }
+    .rs-card { width:min(90%, 360px); max-height:85%; overflow:auto; padding:22px 18px; }
+    .shop-list { overscroll-behavior:contain; }
+    button { touch-action:manipulation; }
+    .actor.hit .ico { animation: hitFlash .16s ease; }
+    @keyframes hitFlash { 50% { transform:scale(1.2); filter:brightness(2.2); } }
+    .actor.foe .ico { filter:drop-shadow(0 2px 5px rgba(248,113,113,.25)); }
+    .actor.swift .ico { filter:drop-shadow(0 0 6px rgba(96,165,250,.8)); }
+    .actor.tank .ico { filter:drop-shadow(0 0 7px rgba(251,191,36,.7)); transform:scale(1.08); }
+    .actor.caster .ico { filter:drop-shadow(0 0 7px rgba(192,132,252,.8)); }
+    .actor.boss .ico { font-size:clamp(31px,9vw,42px); filter:drop-shadow(0 0 9px rgba(248,113,113,.9)); }
+    .actor.ally .ico { filter:drop-shadow(0 2px 5px rgba(74,222,128,.18)); }
+    .slot-cell.matched { background:linear-gradient(145deg,#3b3265,#252b42); }
+    .slot-panel, .shop-panel { overscroll-behavior:contain; }
+    .board-tools { writing-mode:horizontal-tb; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-width:52px; margin:0; letter-spacing:0; }
+    .absorb-toggle { border:1px solid #6d5ce7; background:#29234b; color:#d9d2ff; border-radius:8px; padding:5px 6px; font-size:9px; font-weight:800; white-space:nowrap; }
+    .absorb-toggle.on { background:#6d5ce7; color:#fff; box-shadow:0 0 10px #6d5ce788; }
+    .unit-card { touch-action:pan-y; }
+    .unit-card.drag-source { opacity:.55; transform:scale(.94); }
+    .unit-card.drop-target { border-color:#4ade80; box-shadow:0 0 12px #4ade8088; }
+    .unit-board.absorb-mode .unit-card:not(.locked) { border-color:#7668cb; }
+    .unit-board.absorb-mode .unit-card { touch-action:none; }
+    .unit-card.locked { opacity:.72; }
+    .absorb-hint { position:absolute; left:50%; transform:translateX(-50%); bottom:calc(100% + 4px); font-size:10px; color:#c4b5fd; white-space:nowrap; pointer-events:none; }
+    #absorbChoice { z-index:60; }
+    #absorbChoice .rs-card { text-align:left; }
+    #absorbChoice .rs-card h2, #absorbChoice .rs-card p { text-align:center; }
+    .trait-choice-list { display:flex; flex-direction:column; gap:8px; width:100%; }
+    .trait-choice { width:100%; border:1px solid #465078; border-radius:10px; padding:11px 12px; background:#252b42; color:#e8eaf0; text-align:left; font-size:13px; }
+    .trait-choice small { display:block; color:#9aa3c0; margin-top:3px; }
+    .trait-choice.convert { border-color:#8b75ff; background:#30275b; }
+    .trait-choice.cancel { border-color:#596078; background:#20263a; text-align:center; }
+    @media (min-width:600px) {
+      .phone { width:min(100vw,480px); border-left:1px solid #303958; border-right:1px solid #303958; }
+    }
+    @media (max-height:650px) {
+      .top-bar { flex-basis:42px; height:42px; }
+      .unit-board { flex-basis:76px; height:76px; min-height:76px; }
+      .bottom-bar { flex-basis:58px; height:58px; }
+      .slide-track { height: min(25dvh,150px); }
+      .slot-panel { height:84dvh; }
+    }
+
   </style>
 </head>
 <body>
@@ -449,6 +536,14 @@
       <div class="panel-header"><span>UNIT DETAIL</span><button class="close-btn" id="detailClose">✕</button></div>
       <div class="shop-msg" id="detailMsg"></div>
       <div class="shop-list" id="detailBody"></div>
+    </div>
+
+    <div class="result-screen" id="absorbChoice">
+      <div class="rs-card">
+        <h2>✨ 특성 계승</h2>
+        <p id="absorbChoiceText">희생 유닛의 특성을 선택하세요.</p>
+        <div class="trait-choice-list" id="absorbChoiceList"></div>
+      </div>
     </div>
 
     <div class="result-screen" id="resultScreen">
@@ -736,12 +831,14 @@
       return true;
     }
 
-    // ========== 렌더 ==========
     // ========== 흡수 (Absorb) ==========
-    // 흡수 Lv마다 +20%, 3Lv마다 ★ 승급(추가 +30%)
-    let sel = -1;
+    // 드래그/탭으로 희생 유닛을 대상 유닛에 흡수하고 특성은 플레이어가 선택
+    let sel = -1, absorbMode = false, pendingAbsorb = null;
     const starOf = u => Math.min(3, Math.floor(u.lv / 3));
     function applyStats(u) {
+      const oldMax = u.maxHp || 0;
+      const oldHp = Number.isFinite(u.hp) ? u.hp : oldMax;
+      const hpRatio = oldMax > 0 ? Math.max(0, Math.min(1, oldHp / oldMax)) : 1;
       const t = u.traits.map(i => TRAITS[i]), sb = u.sub ? SUBS[u.sub] : {};
       const prod = k => t.reduce((a, x) => a * (x[k] || 1), 1);
       const m = (1 + 0.2 * u.lv + 0.04 * u.imp) * (1 + 0.3 * starOf(u)) * (u.awake ? 1.5 : 1);
@@ -750,44 +847,119 @@
       u.spdM = prod('spd');
       u.steal = t.reduce((a, x) => a + (x.steal || 0), 0);
       u.burn = t.reduce((a, x) => a + (x.burn || 0), 0);
-      u.hp = u.maxHp;
+      u.hp = Math.min(u.maxHp, Math.round(u.maxHp * hpRatio));
     }
-    function absorb(keep, food) {
-      const k = G.units[keep], f = G.units[food];
-      sel = -1;
-      if (f.lock) { battleMsg.textContent = '🔒 잠긴 유닛은 먹일 수 없어요'; renderBoard(); return; }
-      if (k.lv >= MAX_LV) { battleMsg.textContent = '이미 최대 Lv이에요'; renderBoard(); return; }
-      const gain = k.name === f.name ? 2 : 1, oldStar = starOf(k);
+    function setAbsorbMode(on) {
+      absorbMode = !!on; sel = -1;
+      unitBoard.classList.toggle('absorb-mode', absorbMode);
+      renderBoard();
+      battleMsg.textContent = absorbMode ? '흡수 모드: 희생 유닛을 강화할 유닛 위로 드래그하세요' : '흡수 모드를 종료했습니다';
+    }
+    function beginAbsorb(targetIndex, foodIndex) {
+      if (G.phase === 'fight') { battleMsg.textContent = '전투 중에는 흡수할 수 없어요'; return; }
+      if (targetIndex === foodIndex) return;
+      const k = G.units[targetIndex], f = G.units[foodIndex];
+      if (!k || !f) return;
+      if (f.lock) { battleMsg.textContent = '🔒 잠긴 유닛은 희생시킬 수 없어요'; return; }
+      if (k.lv >= MAX_LV) { battleMsg.textContent = '대상 유닛이 이미 최대 레벨입니다'; return; }
+      const oldStar = starOf(k), gain = k.name === f.name ? 2 : 1;
+      // 대상이 이미 가진 특성과 겹치는 특성은 성장치로 환산, 새 특성은 선택권 제공
+      const incoming = [...new Set((f.traits || []).filter(t => !k.traits.includes(t)))];
+      const duplicates = (f.traits || []).filter(t => k.traits.includes(t)).length;
       k.lv = Math.min(MAX_LV, k.lv + gain);
-      k.imp += 1 + f.imp; // Imprint 전달
-      while (k.imp >= 5) { k.imp -= 5; k.lv = Math.min(MAX_LV, k.lv + 1); } // Imprint 5 → Lv 전환
-      const inh = f.traits.find(t => !k.traits.includes(t));
-      if (inh !== undefined && k.traits.length < 2) k.traits.push(inh); // 특성 계승
+      k.imp += 1 + (f.imp || 0) + duplicates;
+      while (k.imp >= 5 && k.lv < MAX_LV) { k.imp -= 5; k.lv = Math.min(MAX_LV, k.lv + 1); }
+      G.units.splice(foodIndex, 1);
+      sel = -1;
       applyStats(k);
-      G.units.splice(food, 1);
-      battleMsg.textContent = `${k.name} 흡수! Lv ${k.lv}` + (starOf(k) > oldStar ? ` · ★${starOf(k)} 승급!` : '') + (inh !== undefined && k.traits.includes(inh) ? ` · 특성 계승: ${TRAITS[inh].n}` : '');
-      renderBoard(); updateHud(); renderField();
+      pendingAbsorb = { unit:k, incoming, oldStar, gain, name:f.name, duplicateCount:duplicates };
+      updateHud(); renderBoard(); renderField();
+      if (incoming.length) showAbsorbChoices();
+      else finishAbsorb(null);
     }
+    function showAbsorbChoices() {
+      const p = pendingAbsorb; if (!p) return;
+      const list = $('absorbChoiceList'); list.innerHTML = '';
+      $('absorbChoiceText').textContent = p.unit.traits.length < 2 ? '계승할 특성을 선택하세요.' : '특성 슬롯이 가득 찼습니다. 교체하거나 성장치로 전환하세요.';
+      p.incoming.forEach(t => {
+        const b = document.createElement('button'); b.className = 'trait-choice';
+        b.innerHTML = `✨ ${TRAITS[t].n}<small>${TRAITS[t].d}</small>`;
+        b.addEventListener('click', () => finishAbsorb({ type:'add', trait:t })); list.appendChild(b);
+      });
+      if (p.unit.traits.length >= 2) {
+        p.unit.traits.forEach((old, idx) => {
+          p.incoming.forEach(t => {
+            const b = document.createElement('button'); b.className = 'trait-choice';
+            b.innerHTML = `교체: ${TRAITS[old].n} → ${TRAITS[t].n}<small>${TRAITS[t].d}</small>`;
+            b.addEventListener('click', () => finishAbsorb({ type:'replace', index:idx, trait:t })); list.appendChild(b);
+          });
+        });
+      }
+      const convert = document.createElement('button'); convert.className = 'trait-choice convert';
+      convert.innerHTML = '⬆ 성장치로 전환<small>새 특성을 배우지 않고 흡수 성장치를 추가합니다.</small>';
+      convert.addEventListener('click', () => finishAbsorb({ type:'convert' })); list.appendChild(convert);
+      $('absorbChoice').classList.add('show');
+    }
+    function finishAbsorb(choice) {
+      const p = pendingAbsorb; if (!p) return;
+      const u = p.unit; let note = '';
+      if (choice?.type === 'add') { u.traits.push(choice.trait); note = ` · 특성 계승: ${TRAITS[choice.trait].n}`; }
+      else if (choice?.type === 'replace') { const old = u.traits[choice.index]; u.traits[choice.index] = choice.trait; note = ` · ${TRAITS[old].n} → ${TRAITS[choice.trait].n}`; }
+      else if (choice?.type === 'convert') { u.imp += 2; while (u.imp >= 5 && u.lv < MAX_LV) { u.imp -= 5; u.lv = Math.min(MAX_LV, u.lv + 1); } note = ' · 특성 대신 성장치 전환'; }
+      applyStats(u);
+      $('absorbChoice').classList.remove('show');
+      battleMsg.textContent = `${p.name} 흡수 완료! ${u.name} Lv ${u.lv}` + (starOf(u) > p.oldStar ? ` · ★${starOf(u)} 승급!` : '') + note;
+      pendingAbsorb = null; renderBoard(); updateHud(); renderField();
+    }
+    let suppressBoardClickUntil = 0;
     unitBoard.addEventListener('click', e => {
+      if (Date.now() < suppressBoardClickUntil) { e.preventDefault(); return; }
+      const toggle = e.target.closest('#absorbToggle');
+      if (toggle) { setAbsorbMode(!absorbMode); return; }
       const card = e.target.closest('.unit-card');
       if (card && e.target.closest('.inf')) { detIdx = +card.dataset.i; openDetail(); return; }
       if (!card) return;
       if (G.phase === 'fight') { battleMsg.textContent = '전투 중에는 흡수할 수 없어요'; return; }
-      const i = +card.dataset.i;
-      if (sel === -1) sel = i;
+      if (!absorbMode) { battleMsg.textContent = '흡수 버튼을 눌러 흡수 모드를 켜세요'; return; }
+      const i = +card.dataset.i, u = G.units[i];
+      if (!u) return;
+      if (sel < 0) { if (u.lock) { battleMsg.textContent = '잠긴 유닛은 희생 재료로 선택할 수 없습니다'; return; } sel = i; }
       else if (sel === i) sel = -1;
-      else return absorb(sel, i);
-      battleMsg.textContent = sel > -1 ? '먹일 유닛을 탭하세요 (같은 종류면 Lv +2)' : '남길 유닛 → 먹일 유닛 순서로 탭하면 흡수해요';
+      else { const source = sel; sel = -1; beginAbsorb(i, source); return; }
+      battleMsg.textContent = sel >= 0 ? '이제 강화할 대상 유닛을 탭하세요' : '희생 유닛을 선택하거나 드래그하세요';
       renderBoard();
     });
-
+    let dragInfo = null;
+    unitBoard.addEventListener('pointerdown', e => {
+      if (!absorbMode || G.phase === 'fight') return;
+      const card = e.target.closest('.unit-card'); if (!card || e.target.closest('.inf')) return;
+      const i = Number(card.dataset.i), u = G.units[i]; if (!u || u.lock) return;
+      dragInfo = { index:i, x:e.clientX, y:e.clientY, moved:false };
+    });
+    document.addEventListener('pointermove', e => {
+      if (!dragInfo) return;
+      if (Math.hypot(e.clientX-dragInfo.x,e.clientY-dragInfo.y)>10) dragInfo.moved=true;
+      if (dragInfo.moved) { const card = unitBoard.querySelector(`.unit-card[data-i="${dragInfo.index}"]`); if(card) card.classList.add('drag-source'); }
+    });
+    document.addEventListener('pointerup', e => {
+      if (!dragInfo) return; const d=dragInfo; dragInfo=null;
+      if (!d.moved) return;
+      suppressBoardClickUntil = Date.now() + 450;
+      const target = document.elementFromPoint(e.clientX,e.clientY)?.closest?.('.unit-card');
+      unitBoard.querySelectorAll('.drag-source').forEach(x=>x.classList.remove('drag-source'));
+      if (!target) return; const targetIndex=Number(target.dataset.i);
+      if (targetIndex !== d.index) beginAbsorb(targetIndex,d.index);
+    });
     function renderBoard() {
-      unitBoard.innerHTML = '<div class="unit-board-label">BOARD</div>' + G.units.map((u, i) =>
-        `<div class="unit-card${u.isNew ? ' new' : ''}${i === sel ? ' sel' : ''}" data-i="${i}"><i class="inf">ⓘ</i>${u.lock ? '<i class="lk">🔒</i>' : ''}${u.icon}<div class="name">${u.name}</div><div class="lv">${u.lv ? 'Lv' + u.lv : ''}${starOf(u) ? ' ' + '★'.repeat(starOf(u)) : ''}</div></div>`).join('');
+      unitBoard.innerHTML = `<div class="unit-board-label board-tools"><span>BOARD</span><button class="absorb-toggle ${absorbMode?'on':''}" id="absorbToggle">흡수 ${absorbMode?'ON':'OFF'}</button></div>` + G.units.map((u, i) =>
+        `<div class="unit-card${u.isNew ? ' new' : ''}${i === sel ? ' sel' : ''}${u.lock?' locked':''}" data-i="${i}" title="${u.lock?'잠금됨':'유닛'}"><i class="inf">ⓘ</i>${u.lock ? '<i class="lk">🔒</i>' : ''}${u.icon}<div class="name">${u.name}</div><div class="lv">${u.lv ? 'Lv' + u.lv : ''}${starOf(u) ? ' ' + '★'.repeat(starOf(u)) : ''}</div></div>`).join('');
+      unitBoard.classList.toggle('absorb-mode', absorbMode);
     }
     function actorHtml(a, cls) {
       const hit = performance.now() - (a.hitAt || 0) < 150;
-      return `<div class="actor ${cls}${hit ? ' hit' : ''}"><div class="hp"><i style="width:${Math.max(0, a.hp / a.maxHp * 100)}%"></i></div><div class="ico">${a.icon}</div></div>`;
+      const role = a.role ? ` ${a.role}` : '';
+      const attacking = cls === 'ally' && performance.now() - (a.attackAt || 0) < 280;
+      return `<div class="actor ${cls}${role}${hit ? ' hit' : ''}${attacking ? ' attack' : ''}"><div class="hp"><i style="width:${Math.max(0, a.hp / a.maxHp * 100)}%"></i></div><div class="ico">${a.icon}</div></div>`;
     }
     function renderField() {
       field.innerHTML = `<div class="side">${G.units.map(u => actorHtml(u, 'ally')).join('')}</div>` +
@@ -795,14 +967,26 @@
     }
 
     // ========== 웨이브 / 자동 전투 ==========
-    function mkEnemy(icon, hp, atk, spd) { return { icon, maxHp: hp, hp, atk, spd, cd: spd }; }
+    function mkEnemy(icon, hp, atk, spd, role='grunt') {
+      return { icon, maxHp: hp, hp, atk, spd, cd: spd, role, stun: 0, burn: 0, burnDps: 0 };
+    }
 
     function startWave() {
       if (G.phase !== 'prep') return;
       if (!G.units.length) { battleMsg.textContent = '유닛이 없어요. 슬롯을 돌려 먼저 소환하세요'; return; }
       const w = G.wave, hp = 20 + w * 10, atk = 2 + w * 1.2;
-      G.enemies = Array.from({ length: 2 + Math.floor(w * 0.8) }, () => mkEnemy('👾', hp, atk, 1.2));
-      if (w % 5 === 0) G.enemies.push(mkEnemy('👹', hp * 3, atk * 1.5, 1.5));
+      const count = 2 + Math.floor(w * 0.8);
+      const roster = [
+        ['👾', 1.00, 1.00, 1.20, 'grunt'],
+        ['🦇', 0.72, 0.72, 0.72, 'swift'],
+        ['🪨', 1.75, 1.35, 1.65, 'tank'],
+        ['🧙', 0.92, 1.55, 1.35, 'caster']
+      ];
+      G.enemies = Array.from({ length: count }, (_, i) => {
+        const pick = roster[(i + w - 1) % Math.min(roster.length, 2 + Math.floor(w / 3))];
+        return mkEnemy(pick[0], Math.round(hp * pick[1]), Math.round(atk * pick[2] * 10) / 10, pick[3], pick[4]);
+      });
+      if (w % 5 === 0) G.enemies.push(mkEnemy('👹', hp * 3.2, atk * 1.45, 1.5, 'boss'));
       G.phase = 'fight'; sel = -1;
       startBtn.disabled = true;
       battleMsg.textContent = `Wave ${w} 전투 중`;
@@ -810,14 +994,19 @@
       timer = setInterval(tick, 100);
     }
 
+    let lastFieldRender = 0;
     function tick() {
       const dt = 0.1, now = performance.now();
       G.units.forEach(u => {
         u.cd -= dt;
-        if (u.cd <= 0 && G.enemies.length) {
-          G.enemies[0].hp -= u.atk; G.enemies[0].hitAt = now; u.cd = u.spd * u.spdM;
+        if (u.cd <= 0 && G.enemies.some(e => e.hp > 0)) {
+          // 각 유닛은 독립적인 공격 주기를 유지합니다. 먼저 쓰러질 적을 집중 공격하고,
+          // 해당 적이 쓰러지면 같은 틱의 다음 유닛은 살아 있는 다음 적을 공격합니다.
+          const living = G.enemies.filter(e => e.hp > 0);
+          const target = living.reduce((best, e) => (e.hp / e.maxHp < best.hp / best.maxHp ? e : best), living[0]);
+          target.hp -= u.atk; target.hitAt = now; u.attackAt = now; u.cd = u.spd * u.spdM;
           if (u.steal) u.hp = Math.min(u.maxHp, u.hp + u.atk * u.steal);
-          if (u.burn) { const e = G.enemies[0]; e.burn = 3; e.burnDps = Math.max(e.burnDps || 0, u.atk * u.burn); }
+          if (u.burn) { target.burn = 3; target.burnDps = Math.max(target.burnDps || 0, u.atk * u.burn); }
           pop(u.atk, 'R', '#e8eaf0');
         }
         if (u.sub && G.enemies.length) { u.sk -= dt; if (u.sk <= 0) { u.sk = 4; useSkill(u, now); } }
@@ -839,7 +1028,7 @@
       if (G.units.length !== before) renderBoard();
 
       updateHud();
-      renderField();
+      if (now - lastFieldRender >= 100) { renderField(); lastFieldRender = now; }
       if (G.baseHp <= 0) endGame();
       else if (!G.enemies.length) clearWave();
     }
@@ -879,7 +1068,7 @@
       summonUnit(SYMBOLS[0]); // 시작 유닛
       startBtn.textContent = '▶ 웨이브 시작';
       startBtn.disabled = false;
-      battleMsg.textContent = '슬롯으로 유닛을 모으세요. 남길 유닛 → 먹일 유닛 순서로 탭하면 흡수해요';
+      battleMsg.textContent = '슬롯으로 유닛을 모으세요. 흡수 모드에서 희생 유닛을 대상 유닛에 드래그하세요';
       say('슬라이드 바를 아래로 내려 스핀하세요');
       showCore();
       renderBoard(); updateHud(); renderField();
@@ -898,8 +1087,12 @@
       bulwark: { n: '수호자', d: 'HP +30% · 4초마다 아군 전체 HP 15% 회복', hp: 1.3 },
     };
     function useSkill(u, now) {
-      if (u.sub === 'berserk') { const e = G.enemies[0]; e.hp -= u.atk * 3; e.stun = 1.5; e.hitAt = now; }
-      else G.units.forEach(a => a.hp = Math.min(a.maxHp, a.hp + a.maxHp * 0.15));
+      if (u.sub === 'berserk') {
+        const e = G.enemies.reduce((best, x) => (x.hp / x.maxHp < best.hp / best.maxHp ? x : best), G.enemies[0]);
+        if (e) { e.hp -= u.atk * 3; e.stun = 1.5; e.hitAt = now; pop(u.atk * 3, 'R', '#fbbf24'); }
+      } else {
+        G.units.forEach(a => a.hp = Math.min(a.maxHp, a.hp + a.maxHp * 0.15));
+      }
     }
 
     let detIdx = -1;
@@ -991,7 +1184,8 @@
       setTimeout(() => el.remove(), 700);
     }
     // ========== 상점 / 영구 업그레이드 (💎) ==========
-    const SAVE_KEY = 'slotBattleSave_v1';
+    const SAVE_KEY = 'slotBattleSave_v2';
+    const LEGACY_SAVE_KEY = 'slotBattleSave_v1';
     const META = { ruby: 0, best: 0, dex: { u: [], t: [], s: [] }, up: { gold: 0, spin: 0, atk: 0, hp: 0, slot: 0 } };
     const maxUnits = () => MAX_UNITS + META.up.slot;
 
@@ -1015,8 +1209,13 @@
 
     function loadMeta() {
       try {
-        const d = JSON.parse(localStorage.getItem(SAVE_KEY));
-        if (d) { META.ruby = d.ruby | 0; META.best = d.best | 0; if (d.dex) META.dex = d.dex; Object.assign(META.up, d.up || {}); }
+        const d = JSON.parse(localStorage.getItem(SAVE_KEY) || localStorage.getItem(LEGACY_SAVE_KEY) || 'null');
+        if (d) {
+          META.ruby = d.ruby | 0; META.best = d.best | 0;
+          if (d.dex) META.dex = { u: d.dex.u || [], t: d.dex.t || [], s: d.dex.s || [] };
+          Object.assign(META.up, d.up || {});
+          saveMeta();
+        }
       } catch (e) {}
     }
     function saveMeta() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(META)); } catch (e) {} }
