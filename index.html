@@ -690,7 +690,7 @@
     </div>
 
     <div class="result-screen" id="resultScreen">
-      <div class="rs-card"><h2 id="rsTitle">GAME OVER</h2><p id="rsText"></p><button class="start-btn" id="rsNext" style="display:none">다음 스테이지</button> <button class="start-btn" id="rsBtn">다시 시작</button> <button class="start-btn" id="rsLobby">로비</button></div>
+      <div class="rs-card"><h2 id="rsTitle">GAME OVER</h2><p id="rsText"></p><button class="start-btn" id="rsNext" style="display:none">다음 스테이지</button> <button class="start-btn" id="rsBtn">다시 시작</button> <button class="start-btn" id="rsUpg">🔮 업그레이드</button> <button class="start-btn" id="rsLobby">로비</button></div>
     </div>
 
     <div class="result-screen" id="coreScreen">
@@ -773,8 +773,9 @@
       Special:  { r: ['🤡', 'Jester'] },
     };
     function rollTier(min) {
-      const w = (G && G.wave) || 1, wt = { n: Math.max(40, 80 - w * 0.8), a: 14 + w * 0.3, r: w >= 3 ? 3 + w * 0.3 : 0, l: w >= 6 ? 0.8 + w * 0.12 : 0, p: w >= 10 ? 0.2 + w * 0.05 : 0 };
-      const ok = TORDER.filter(t => TORDER.indexOf(t) >= TORDER.indexOf(min || 'n')), tot = ok.reduce((a, t) => a + wt[t], 0);
+      const w = (G && G.wave) || 1, rs = k => 1 + 0.3 * hasN(k + 'R1') + 0.4 * hasN(k + 'R2');
+      const wt = { n: Math.max(40, 80 - w * 0.8), a: has('advUnlock') ? (14 + w * 0.3) * rs('adv') : 0, r: has('rareUnlock') && w >= 3 ? (3 + w * 0.3) * rs('rare') : 0, l: has('legUnlock') && w >= 6 ? (0.8 + w * 0.12) * rs('leg') : 0, p: has('prismUnlock') && w >= 10 ? (0.2 + w * 0.05) * rs('prism') : 0 };
+      const ok = TORDER.filter(t => TORDER.indexOf(t) >= TORDER.indexOf(min || 'n') && (wt[t] > 0 || t === 'n')), tot = ok.reduce((a, t) => a + wt[t], 0);
       let r = Math.random() * tot; for (const t of ok) { r -= wt[t]; if (r <= 0) return t; } return ok[ok.length - 1];
     }
     const PAYLINES = [
@@ -922,7 +923,7 @@
 
     // ========== 스핀 + 판정 + 소환 ==========
     function weightedRandom(noPrism) {
-      const pool = SYMBOLS.filter(x => META.best >= (x.need || 0) && !(noPrism && x.prism)); // 최고 웨이브로 해금
+      const pool = SYMBOLS.filter(x => META.best >= (x.need || 0) && !(noPrism && x.prism) && !(x.prism && !has('legUnlock'))); // 최고 웨이브로 해금
       const w = x => x.weight * (G.core === 'lucky' && x.name === 'Special' ? 2 : 1);
       let r = Math.random() * pool.reduce((a, x) => a + w(x), 0);
       for (const x of pool) { r -= w(x); if (r <= 0) return x; }
@@ -986,12 +987,13 @@
       }
 
       G.spinning = true; G.nudge = false;
-      G.gold -= spinCost(); G.spins -= 1;
+      G.gold -= spinCost(); G.nudgeDisc = false; G.spins -= 1;
       updateHud(); say('🎰 스핀 중...');
       cells.forEach(c => { c.classList.remove('matched', 'line-glow'); });
 
       // 결과를 먼저 정하고, 릴이 열 단위로 차례대로 멈추는 연출 (더 빠르고 긴장감 있게)
       const result = Array.from({ length: 9 }, () => weightedRandom());
+      if (G.cbSpin) { G.cbSpin = false; const f = weightedRandom(true); [0, 1, 2].forEach(i => { result[i] = f; }); } // 역전 레버: 반드시 당첨
       cells.forEach((cell, i) => {
         cell.classList.add('rolling');
         const iv = setInterval(() => { cell.textContent = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)].icon; }, 55);
@@ -1022,7 +1024,7 @@
       g[c + 6] = g[c + 3]; g[c + 3] = g[c]; g[c] = weightedRandom();
       drawGrid(); updateHud();
       [c, c + 3, c + 6].forEach(k => { cells[k].classList.add('spinning'); setTimeout(() => cells[k].classList.remove('spinning'), 400); });
-      if (!evalGrid()) say('넛지 실패…');
+      if (!evalGrid()) { say('넛지 실패…'); if (has('nudgeMastery')) { G.nudgeDisc = true; say('넛지 실패… (넛지 숙련: 다음 스핀 -50)'); } }
     }
     cells.forEach((el, i) => el.addEventListener('click', () => nudge(i)));
 
@@ -1123,8 +1125,8 @@
       const prod = k => t.reduce((a, x) => a * (x[k] || 1), 1);
       const gl = lvGrowth(u.lv), m = [1, 1.6, 2.6][starOf(u) - 1] * (u.awake ? 1.5 : 1);
       u.iL = {}; (u.imps || []).forEach(x => { u.iL[x.id] = x.lv; });
-      u.maxHp = Math.round(u.hp0 * m * (1 + gl.hp) * prod('hp') * (sb.hp || 1) * (1 + 0.05 * META.up.hp) * (1 + 0.08 * iLv('p_hp')) * (u.vh || 1));
-      u.atk = Math.round(u.atk0 * m * (1 + gl.atk) * prod('atk') * (sb.atk || 1) * (1 + 0.05 * META.up.atk) * (1 + 0.08 * iLv('p_atk')) * (u.va || 1) * 10) / 10;
+      u.maxHp = Math.round(u.hp0 * m * (1 + gl.hp) * prod('hp') * (sb.hp || 1) * (1 + 0.08 * iLv('p_hp')) * (u.vh || 1));
+      u.atk = Math.round(u.atk0 * m * (1 + gl.atk) * prod('atk') * (sb.atk || 1) * (1 + 0.08 * iLv('p_atk')) * (u.va || 1) * 10) / 10;
       u.spdM = prod('spd') * (sb.spd || 1) * (1 - 0.04 * iLv('p_spd')) / (1 + gl.as);
       u.steal = t.reduce((a, x) => a + (x.steal || 0), 0);
       u.burn = t.reduce((a, x) => a + (x.burn || 0), 0);
@@ -1539,6 +1541,8 @@
       G.units.forEach(u => { u.rv2 = false; u.rvT = 0; u.bu = false; u.od = false; u.hits = 0; u.rev = false; u.fs = !!u.firstS; u.sh = u.shieldP ? u.maxHp * u.shieldP : 0; if (u.firstS) u.cd = 0;
         u.exploded = false; u.ghost = false; u.ghosted = false; u.big = 0; u.rel = 0; u.lastT = null; u.ov = 0; u.ovB = 0; u.cb = 0;
         });
+      G.lostThisWave = false;
+      if (has('interest')) { const gi = Math.min(50, Math.floor(G.gold / 100) * (10 + 3 * iLv('p_int'))); if (gi > 0) { G.gold += gi; battleMsg.textContent = `📈 전술적 이자 +${gi} 골드`; } }
       G.enemies.forEach((e, i) => { e.ex = Math.floor(i / 4); e.ey = (i % 4) + (Math.floor(i / 4) % 2) * 0.5; }); // 적 논리 좌표
       G.minions = G.minions.filter(m => m.persist && !boss); // 보스 추종자는 다음 보스전까지 유지
       G.minions.forEach(m => { m.hp = m.maxHp; m.cd = 0.6; });
@@ -1584,6 +1588,7 @@
       $('rsBtn').textContent = '재도전';
       startBtn.textContent = '다시 시작'; startBtn.disabled = false;
       battleMsg.textContent = `🏆 ${STAGES[s].n} 클리어!`;
+      updateRsUpg();
       $('resultScreen').classList.add('show');
       updateHud();
     }
@@ -1602,6 +1607,16 @@
     function spawnColossus(u) {
       const c = u.iL.colossus; spawnMinion(Object.assign({ kind: 'colossus', owner: u, icon: '🗿', name: '거신', maxHp: Math.round(u.maxHp * lerp(c, 2, 4)), atk: u.atk * lerp(c, 0.4, 0.9), spd: 1.4 }, nearOwner(u)));
       if (c >= 5) liveE().forEach(e => { e.stun = Math.max(e.stun || 0, 0.8); e.kb = 70; e.kbT = 0.8; }); // LV5: 소환 시 적을 밀쳐내고 기절
+    }
+    // 기지 피격: 초보자 방패 / 재도전 보급 / 역전 레버
+    function baseHit(d) {
+      if (has('noviceShield') && !G.nsUsed && G.wave <= 4) { G.nsUsed = true; battleMsg.textContent = '🛡️ 초보자 방패가 기지 피해를 막았어요'; return; }
+      G.baseHp -= d;
+      if (!G.lostThisWave) {
+        G.lostThisWave = true;
+        if (has('retry1')) { G.gold += has('retry2') ? 150 : 100; battleMsg.textContent = `🔁 재도전 보급 +${has('retry2') ? 150 : 100} 골드`; }
+        if (has('comeback') && !G.cbUsed) { G.cbUsed = true; G.cbSpin = true; battleMsg.textContent = '🎰 역전 레버: 다음 스핀은 반드시 당첨!'; }
+      }
     }
     function tick() {
       const dt = 0.1, now = performance.now(), st = themeOf();
@@ -1693,7 +1708,7 @@
             const tg = pickTarget(e, st, pool), sm = e.shr > 0 ? 1 - e.shrP : 1;
             hurt(tg, e.atk * sm * (tg.fam === 'Spearman' ? 0.85 : 1), e); pop(e.atk * sm, 'L', '#f87171');
             if (e.splash) G.units.forEach(a => { if (a !== tg) hurt(a, e.atk * e.splash, null); });
-          } else G.baseHp -= e.atk;
+          } else baseHit(e.atk);
         }
       });
       if (st.burnU && G.units.length) { const bd = (0.5 + 0.12 * G.wave) * DIFFS[G.diff].atk * dt; G.units.forEach(u => u.hp -= bd); } // 붉은 지옥: 지속 화염
@@ -1723,12 +1738,13 @@
     function clearWave() {
       clearInterval(timer);
       G.minions = G.minions.filter(m => m.persist); // 일반 소환체는 웨이브가 끝나면 사라짐
-      const interest = Math.min(150, Math.floor(G.gold * (0.05 + 0.03 * iLv('p_int')))); // 전술적 이자: 보유 골드 비례
-      const reward = Math.round((180 + G.wave * 50) * (G.core === 'rich' ? 1.5 : 1) * (1 + 0.12 * iLv('p_gold'))) + interest;
+      const interest = 0; // 이자는 '전술적 이자' 노드로 전투 시작 시 지급
+      const reward = Math.round((180 + G.wave * 50) * (G.core === 'rich' ? 1.5 : 1) * (1 + 0.12 * iLv('p_gold'))) + interest + (has('victory') ? 5 : 0);
       G.gold += reward;
       const rb = 2 + (G.wave % 5 === 0 ? 5 : 0); // 보스 웨이브 보너스
       META.ruby += rb; G.runRuby += rb; META.best = Math.max(META.best, G.wave); saveMeta();
       const sp = 3 + iLv('p_spin'); G.spins += sp;
+      if (has('gateRec') && G.wave % 5 === 0) G.baseHp = Math.min(baseMax(), G.baseHp + 20); // 관문 회복
       if (G.stage >= 0 && G.wave >= waveMax()) { stageClear(); return; }
       const ess = 3 + (G.wave % 5 === 0 ? 4 : 0) + iLv('p_ess'); G.essence += ess; newStock(); // 정수: 웨이브 클리어 보상(보스 웨이브 보너스), 상점 목록 갱신
       G.wave += 1;
@@ -1745,14 +1761,15 @@
       startBtn.disabled = false;
       startBtn.textContent = '다시 시작';
       $('rsTitle').textContent = 'GAME OVER'; $('rsNext').style.display = 'none'; $('rsBtn').textContent = '다시 시작';
-      $('rsText').innerHTML = `${G.stage >= 0 ? STAGES[G.stage].n + ' (' + DIFFS[G.diff].n + ') · ' : '♾️ 무한 모드 · '}Wave ${G.wave} 도달<br>이번 판 💎 ${G.runRuby} 획득 (보유 ${META.ruby})<br>상점에서 업그레이드 후 다시 도전하세요`;
+      $('rsText').innerHTML = `${G.stage >= 0 ? STAGES[G.stage].n + ' (' + DIFFS[G.diff].n + ') · ' : '♾️ 무한 모드 · '}Wave ${G.wave} 도달<br>이번 판 💎 ${G.runRuby} 획득 (보유 ${META.ruby})<br>🔮 업그레이드 트리에서 기원석(💎)을 써서 영구 강화를 해금하세요`;
+      updateRsUpg();
       $('resultScreen').classList.add('show');
       battleMsg.textContent = `GAME OVER · Wave ${G.wave}에서 기지가 무너졌어요`;
     }
 
     function resetGame() {
       clearInterval(timer);
-      Object.assign(G, { gold: 900 + 100 * META.up.gold, spins: 7 + 2 * META.up.spin, wave: 1, baseHp: 100, phase: 'prep', spinning: false, units: [], bench: [], enemies: [], minions: [], runRuby: 0, core: null, essence: 5, stock: [], rerolls: 0, items: {} }); newStock();
+      Object.assign(G, { gold: 900 + 50 * hasN('initSupply') + 50 * hasN('supplyWh'), spins: 7, wave: 1, baseHp: baseMax(), nsUsed: false, cbUsed: false, cbSpin: false, lostThisWave: false, regUsed: false, nudgeDisc: false, coreRerolls: hasN('coreReroll') + hasN('coreReroll2'), phase: 'prep', spinning: false, units: [], bench: [], enemies: [], minions: [], runRuby: 0, core: null, essence: 5 + 2 * hasN('emEss'), stock: [], rerolls: 0, items: {} }); newStock();
       $('resultScreen').classList.remove('show');
       G.grid = Array.from({ length: 9 }, () => weightedRandom()); G.nudge = false; sel = -1;
       cells.forEach(c => c.classList.remove('matched'));
@@ -1937,6 +1954,7 @@
             (!u.sub && st >= 2 ? ['A', 'B'].map(r => `<button class="buy" data-sub="${r}">${routeName(u, r, 0)}</button>`).join('') : '') + `</div>`;
         })() +
         (detIdx >= 100 ? `<div class="shop-row"><div class="info">출전<small>${G.units.length >= maxUnits() ? '출전 자리가 가득 찼어요 (필드 유닛 위로 드래그해 흡수하세요)' : '필드에 내보냅니다'}</small></div><button class="buy" data-deploy="1" ${G.phase !== 'prep' || G.units.length >= maxUnits() ? 'disabled' : ''}>출전</button></div>` : '') +
+        (has('dormant') ? `<div class="shop-row"><div class="info">각성<small>${u.awake ? '각성 완료 (능력치 ×1.5)' : u.lv >= 30 ? '흡수 Lv 30 이상 · 능력치 ×1.5' : '흡수 Lv 30 필요 (현재 ' + u.lv + ')'}</small></div>${!u.awake && u.lv >= 30 ? '<button class="buy" data-awake="1">각성</button>' : ''}</div>` : '') +
         `<div class="shop-row"><div class="info">잠금<small>잠그면 흡수 재료로 쓰이지 않아요</small></div><button class="buy" data-lock="1">${u.lock ? '🔒 해제' : '🔓 잠금'}</button></div>`;
     }
     $('detailBody').addEventListener('click', e => {
@@ -1972,20 +1990,31 @@
       { id: 'cheap', n: '🏷️ 절약', d: '스핀 비용 100 → 70' },
       { id: 'elite', n: '🎖️ 정예', d: '시작 유닛 +1 (랜덤)' },
     ];
-    const spinCost = () => G.core === 'cheap' ? 70 : SPIN_COST;
-    function showCore() {
-      $('coreList').innerHTML = CORES.map(c => `<div class="shop-row"><div class="info">${c.n}<small>${c.d}</small></div><button class="buy" data-core="${c.id}">선택</button></div>`).join('');
+    const spinCost = () => Math.max(0, (G.core === 'cheap' ? 70 : SPIN_COST) - (has('spareSpin') && G.spins === 1 ? 50 : 0) - (G.nudgeDisc ? 50 : 0));
+    let coreChoices = [];
+    function showCore(fresh) {
+      if (fresh !== false || !coreChoices.length) coreChoices = [...CORES].sort(() => Math.random() - 0.5).slice(0, 3);
+      $('coreList').innerHTML = coreChoices.map(c => `<div class="shop-row"><div class="info">${c.n}<small>${c.d}</small></div><button class="buy" data-core="${c.id}">선택</button></div>`).join('')
+        + (G.coreRerolls > 0 ? `<div class="shop-row"><div class="info">🔄 코어 리롤<small>선택지를 무료로 다시 뽑습니다 (남은 ${G.coreRerolls}회)</small></div><button class="buy" data-corereroll="1">리롤</button></div>` : '');
       $('coreScreen').classList.add('show');
     }
     $('coreList').addEventListener('click', e => {
       const b = e.target.closest('.buy');
       if (!b) return;
+      if (b.dataset.corereroll) { if (G.coreRerolls > 0) { G.coreRerolls--; showCore(true); } return; }
       const c = CORES.find(x => x.id === b.dataset.core);
       G.core = c.id;
       if (c.id === 'elite') summonUnit(weightedRandom(true));
       $('coreScreen').classList.remove('show');
       battleMsg.textContent = `Core ${c.n} · 필드에서 유닛을 드래그해 원하는 위치에 놓으세요`;
       updateHud();
+    });
+    function updateRsUpg() { const n = affordableNodes(); $('rsUpg').textContent = n ? `🔮 업그레이드 (구매 가능 ${n})` : '🔮 업그레이드'; }
+    $('rsUpg').addEventListener('click', () => {
+      $('resultScreen').classList.remove('show');
+      shopTab = 'upg'; document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x.dataset.tab === 'upg'));
+      $('shopMsg').textContent = ''; renderShop();
+      $('shopPanel').classList.add('open'); overlay.classList.add('show'); mainArea.classList.add('dimmed');
     });
     $('rsLobby').addEventListener('click', () => { $('resultScreen').classList.remove('show'); renderLobby(); $('lobby').classList.add('show'); });
 
@@ -2017,24 +2046,156 @@
     // ========== 상점 / 영구 업그레이드 (💎) ==========
     const SAVE_KEY = 'slotBattleSave_v2';
     const LEGACY_SAVE_KEY = 'slotBattleSave_v1';
-    const META = { ruby: 0, best: 0, clear: {}, unl: {}, dex: { u: [], t: [], s: [], a: [], l: [] }, up: { gold: 0, spin: 0, atk: 0, hp: 0, slot: 0, islot: 0 } };
-    const maxUnits = () => MAX_UNITS + META.up.slot;
+    const META = { ruby: 0, best: 0, clear: {}, unl: {}, tree: {}, dex: { u: [], t: [], s: [], a: [], l: [] }, up: { gold: 0, spin: 0, atk: 0, hp: 0, slot: 0, islot: 0 } };
+    const maxUnits = () => MAX_UNITS + hasN('cmd1') + hasN('cmd2') + hasN('cmd3');
 
     // 영구 업그레이드: 다음 레벨 비용 = cost × (현재 Lv + 1)
-    const UPGRADES = [
-      { k: 'gold', name: '시작 골드',  desc: '런 시작 골드 +100', max: 5,  cost: 20 },
-      { k: 'spin', name: '시작 스핀',  desc: '런 시작 스핀 +2',   max: 5,  cost: 20 },
-      { k: 'atk',  name: '공격 강화',  desc: '유닛 공격력 +5%',   max: 10, cost: 15 },
-      { k: 'hp',   name: '체력 강화',  desc: '유닛 체력 +5%',     max: 10, cost: 15 },
-      { k: 'slot', name: '보드 확장',  desc: '최대 유닛 +1 (최대 8칸)', max: 3,  cost: 60 },
-      { k: 'islot', name: '아이템 칸 확장', desc: '장착 아이템 칸 +1 (기본 6, 최대 8)', max: 2, cost: 50 },
+    // ===== 영구 업그레이드 트리 (Slotbound 113노드 · 기원석(💎)으로 런 사이에 구매 · 노드마다 1회) =====
+    // [id, 분류, 이름, 비용, 효과, 선행[], 스테이지 클리어 [스테이지, 난이도], 그룹조건 [그룹, 필요 개수], 미구현(🚧)]
+    const NODE_ROWS = [
+      ['sigil','O','봉인 해제 인장',1,'업그레이드의 봉인이 풀립니다.',[],null,null,0],
+      ['advUnlock','R','고급 해금',4,'고급 유닛이 등장하기 시작합니다.',['sigil'],[0,0],null,0],
+      ['advR1','R','고급 연구 I',12,'고급 유닛 등장 확률 증가.',['advUnlock'],null,null,0],
+      ['advR2','R','고급 연구 II',28,'고급 유닛 등장 확률 추가 증가.',['advR1'],null,null,0],
+      ['rareUnlock','R','희귀 해금',70,'희귀 유닛이 등장하기 시작합니다.',['advR2'],[1,1],null,0],
+      ['rareR1','R','희귀 연구 I',100,'희귀 유닛 등장 확률 증가.',['rareUnlock'],null,null,0],
+      ['rareR2','R','희귀 연구 II',140,'희귀 유닛 등장 확률 추가 증가.',['rareR1'],null,null,0],
+      ['legUnlock','R','전설 해금',120,'전설 유닛이 등장하기 시작합니다.',['rareUnlock'],[3,0],null,0],
+      ['legR1','R','전설 연구 I',170,'전설 유닛 등장 확률 증가.',['legUnlock'],null,null,0],
+      ['legR2','R','전설 연구 II',230,'전설 유닛 등장 확률 추가 증가.',['legR1'],null,null,0],
+      ['prismUnlock','R','프리즘 해금',200,'프리즘 유닛이 등장하기 시작합니다.',['legUnlock'],[4,0],null,0],
+      ['prismR1','R','프리즘 연구 I',280,'프리즘 유닛 등장 확률 증가.',['prismUnlock'],null,null,0],
+      ['prismR2','R','프리즘 연구 II',380,'프리즘 유닛 등장 확률 추가 증가.',['prismR1'],null,null,0],
+      ['fateUnlock','R','운명의 돌 해금',90,'운명의 돌 시스템을 해금합니다.',['legUnlock'],null,null,1],
+      ['twin','R','쌍둥이 돌',45,'C 카드에 쌍둥이 돌 등장. 유닛 2기를 줍니다.',['fateUnlock'],null,null,1],
+      ['breeze','R','미풍의 돌',90,'C 카드에 미풍의 돌 등장. 고급을 건너뛰고 희귀를 노립니다.',['twin'],[4,1],null,1],
+      ['omen','R','예감의 돌',120,'C 카드에 예감의 돌 등장. 후보 3개 중 1개를 고릅니다.',['breeze'],[4,1],null,1],
+      ['special','R','특수의 돌',70,'B 카드에 특수의 돌 등장. 15% 확률로 특수 유닛.',['fateUnlock'],null,null,1],
+      ['mastery','R','숙련의 돌',130,'B 카드에 숙련의 돌 등장. 유닛이 ★2로 도착합니다.',['special'],[4,1],null,1],
+      ['rift','R','균열의 돌',170,'B 카드에 균열의 돌 등장. 일반 또는 전설/프리즘.',['mastery'],[4,1],null,1],
+      ['constellation','R','별자리 돌',110,'A 카드에 별자리 돌 등장. 유닛 3기를 줍니다.',['fateUnlock'],null,null,1],
+      ['sanctum','R','성소의 돌',180,'A 카드에 성소의 돌 등장. 희귀 이상 보장.',['constellation'],[4,1],null,1],
+      ['gambit','R','도박의 돌',230,'A 카드에 도박의 돌 등장. 고급 또는 전설/프리즘.',['sanctum'],[4,1],null,1],
+      ['questReroll','R','퀘스트 리롤',60,'런마다 돌 퀘스트 1개를 리롤합니다.',['fateUnlock'],[3,1],null,1],
+      ['stoneStand','R','돌 진열대',60,'런 시작 전 기계 선택 화면에서 운명의 돌 1개를 구매합니다.',['fateUnlock'],[4,0],['research',16],1],
+      ['stoneStand1','R','돌 진열대 +1',150,'돌 진열대에 등급 무관 돌 1개 추가.',['stoneStand'],[4,1],['research',23],1],
+      ['life1','S','추가 목숨 I',1,'기지 최대 체력 +20.',['sigil'],null,null,0],
+      ['initSupply','S','초기 보급',2,'시작 골드 +50.',['life1'],null,null,0],
+      ['noviceShield','S','초보자 방패',4,'1~4웨이브 중 기지 피해를 처음 한 번 막아 줍니다.',['life1'],null,null,0],
+      ['supplyWh','S','보급 창고',7,'시작 골드 +50.',['initSupply'],null,null,0],
+      ['retry1','S','재도전 보급',9,'기지가 피해를 입는 웨이브마다 첫 피격 시 골드 +100.',['initSupply'],null,null,0],
+      ['comeback','S','역전 레버',20,'기지가 처음 피해를 입은 뒤 다음 스핀이 반드시 당첨됩니다. 런당 1회.',['noviceShield'],null,null,0],
+      ['expedition','S','원정 보급',12,'매 런을 원정 코어 "용병 계약"으로 시작합니다.',['initSupply'],null,null,1],
+      ['gateRec','S','관문 회복',48,'5의 배수(심판·보스) 웨이브를 클리어하면 기지 체력 +20 회복.',['comeback'],null,null,0],
+      ['life2','S','추가 목숨 II',22,'기지 최대 체력 +20.',['retry1'],null,null,0],
+      ['contractExt','S','계약 연장',18,'용병 계약을 한 번 더 사용할 수 있습니다.',['expedition'],[0,1],null,1],
+      ['emEss','S','비상 정수',30,'런 시작 시 정수 +2.',['life1'],[1,1],['supply',14],0],
+      ['victory','S','승리 보너스',45,'웨이브를 이길 때마다 골드 +5.',['interest'],[1,1],null,0],
+      ['spareSpin','S','잔돈 스핀',70,'웨이브의 마지막 스핀 비용 -50 골드.',['victory'],[2,1],null,0],
+      ['retry2','S','재도전 보급 II',35,'피격 시 얻는 골드가 150으로 증가.',['retry1'],[1,1],null,0],
+      ['interest','S','전술적 이자',8,'전투 시작 시 보유 골드 100당 10골드, 최대 50골드를 얻습니다.',['supplyWh'],null,null,0],
+      ['cmd1','U','지휘 한도 I',6,'최대 배치 유닛 +1.',['sigil'],null,null,0],
+      ['cmd2','U','지휘 한도 II',70,'최대 배치 유닛 +1.',['cmd1'],null,null,0],
+      ['cmd3','U','지휘 한도 III',180,'최대 배치 유닛 +1.',['cmd2'],null,null,0],
+      ['dormant','U','잠든 힘',12,'유닛 각성 해금 (흡수 Lv 30 이상 유닛 능력치 ×1.5).',['cmd2'],null,null,0],
+      ['growth','U','성장 분기',45,'3성 전직 시 서로 다른 특성의 후보 3개 중 1개 선택.',['cmd1'],null,['units',11],1],
+      ['haste','U','전투 가속',60,'무한 모드에서 빨리감기 최대 ×3.',['cmd3'],[5,0],null,1],
+      ['calcLuck','U','계산된 행운',12,'유닛이 이 특성을 얻을 수 있게 됩니다.',['dormant'],[0,1],null,1],
+      ['bloodbath','U','피의 목욕',24,'유닛이 이 특성을 얻을 수 있게 됩니다.',['calcLuck'],[1,1],null,1],
+      ['predatory','U','포식 본능',28,'유닛이 이 특성을 얻을 수 있게 됩니다.',['bloodbath'],[1,1],null,1],
+      ['versatile','U','다재다능',130,'유닛이 이 특성을 얻을 수 있게 됩니다.',['rapid'],[3,1],null,1],
+      ['rapid','U','신속한 타격',40,'유닛이 이 특성을 얻을 수 있게 됩니다.',['predatory'],[2,1],null,1],
+      ['anchored','U','고정된 자세',28,'유닛이 이 특성을 얻을 수 있게 됩니다.',['calcLuck'],[1,1],null,1],
+      ['heavy','U','헤비웨이트',48,'유닛이 이 특성을 얻을 수 있게 됩니다.',['anchored'],[2,1],null,1],
+      ['reroll','H','상점 리롤',6,'상점 리롤 비용 -1.',['advUnlock'],null,null,0],
+      ['dustCloak','H','먼지 망토',5,'이 아이템이 상점에 등장할 수 있습니다.',['reroll'],null,null,1],
+      ['cursedMushroom','H','저주받은 버섯',8,'이 아이템이 상점에 등장할 수 있습니다.',['dustCloak'],[0,1],null,1],
+      ['shieldManual','H','방패 교본',10,'이 아이템이 상점에 등장할 수 있습니다.',['cursedMushroom'],[0,1],null,1],
+      ['ricochet','H','도탄석',24,'이 아이템이 상점에 등장할 수 있습니다.',['cursedMushroom'],[1,1],null,1],
+      ['healingSpring','H','치유의 샘',28,'이 아이템이 상점에 등장할 수 있습니다.',['shieldManual'],[1,1],null,1],
+      ['magicCircle','H','마법진',28,'이 아이템이 상점에 등장할 수 있습니다.',['healingSpring'],[1,1],null,1],
+      ['chalice','H','넘치는 성배',55,'이 아이템이 상점에 등장할 수 있습니다.',['shieldManual'],[2,1],null,1],
+      ['tunnel','H','터널',50,'이 아이템이 상점에 등장할 수 있습니다.',['ricochet'],[2,1],null,1],
+      ['hourglass','H','사신의 모래시계',55,'이 아이템이 상점에 등장할 수 있습니다.',['magicCircle'],[2,1],null,1],
+      ['guardianTotem','H','수호 토템',80,'이 아이템이 상점에 등장할 수 있습니다.',['tunnel'],[3,1],null,1],
+      ['peddler','H','행상인의 짐',160,'이 아이템이 상점에 등장할 수 있습니다.',['hourglass'],[3,1],null,1],
+      ['burningHeart','H','불타는 심장',140,'이 아이템이 상점에 등장할 수 있습니다.',['chalice'],[3,1],null,1],
+      ['slot1','H','아이템 칸 확장 I',45,'아이템 장착 칸 +1.',['reroll'],null,['shop',8],0],
+      ['recycling','H','재활용 장부',35,'아이템 삭제 환급률이 50%에서 80%로 증가.',['dustCloak'],null,null,1],
+      ['regulars','H','단골 할인',50,'런마다 한 번, 상점 아이템 1개가 정수 1 저렴해집니다.',['recycling'],[2,1],null,0],
+      ['slot2','H','아이템 칸 확장 II',160,'아이템 장착 칸 +1.',['slot1'],null,['shop',15],0],
+      ['coreReroll','C','코어 리롤',10,'런마다 코어 선택지를 1번 무료로 리롤합니다.',['advUnlock'],null,null,0],
+      ['earlyPick','C','빠른 선택',30,'첫 코어 선택에 필요한 스핀 수 -1.',['coreReroll'],null,null,1],
+      ['nudgeMastery','C','넛지 숙련',3,'넛지로 새 당첨이 생기지 않으면 다음 스핀 비용 -50 골드.',['earlyPick'],null,null,0],
+      ['radiantFirst','C','빛나는 첫 선택',60,'첫 코어 선택지에 희귀 이상 코어 1개 보장.',['earlyPick'],null,null,1],
+      ['coreReroll2','C','코어 리롤 II',24,'코어 선택지를 1번 더 무료 리롤합니다.',['coreReroll'],[0,1],null,0],
+      ['lingering','C','잔광',80,'두 번째 코어 선택지에도 희귀 이상 코어 1개 보장.',['radiantFirst'],[2,1],null,1],
+      ['goldTooth','C','금니',8,'이 코어가 선택지에 등장할 수 있습니다.',['coreReroll'],null,null,1],
+      ['blackNote','C','검은 악보',12,'이 코어가 선택지에 등장할 수 있습니다.',['goldTooth'],null,null,1],
+      ['anvil','C','공명 모루',12,'이 코어가 선택지에 등장할 수 있습니다.',['blackNote'],null,null,1],
+      ['crookedFang','C','굽은 송곳니',20,'이 코어가 선택지에 등장할 수 있습니다.',['anvil'],[0,1],null,1],
+      ['wildcard','C','와일드카드',40,'이 코어가 선택지에 등장할 수 있습니다.',['blackNote'],[0,1],null,1],
+      ['goldenLever','C','황금 레버',45,'이 코어가 선택지에 등장할 수 있습니다.',['wildcard'],[0,1],null,1],
+      ['tricksterCube','C','사기꾼의 큐브',40,'이 코어가 선택지에 등장할 수 있습니다.',['crookedFang'],[1,1],null,1],
+      ['magicLamp','C','마법 램프',40,'이 코어가 선택지에 등장할 수 있습니다.',['tricksterCube'],[1,1],null,1],
+      ['clover','C','네잎클로버',45,'이 코어가 선택지에 등장할 수 있습니다.',['magicLamp'],[1,1],null,1],
+      ['hammer','C','운명의 망치',60,'이 코어가 선택지에 등장할 수 있습니다.',['clover'],[2,1],null,1],
+      ['chaliceGreed','C','탐욕의 성배',8,'이 코어가 선택지에 등장할 수 있습니다.',['goldTooth'],null,null,1],
+      ['jokerGrin','C','조커의 미소',12,'이 코어가 선택지에 등장할 수 있습니다.',['chaliceGreed'],[0,1],null,1],
+      ['witchTorch','C','마녀의 횃불',14,'이 코어가 선택지에 등장할 수 있습니다.',['jokerGrin'],[0,1],null,1],
+      ['echoShell','C','메아리 조개',150,'이 코어가 선택지에 등장할 수 있습니다.',['goldenLever'],[3,1],null,1],
+      ['greedyPearl','C','탐욕의 진주',5,'이 코어가 선택지에 등장할 수 있습니다.',['nudgeMastery'],null,null,1],
+      ['reverseAxis','C','역회전 축',10,'이 코어가 선택지에 등장할 수 있습니다.',['greedyPearl'],[0,1],null,1],
+      ['cycleBell','C','순환의 종',12,'이 코어가 선택지에 등장할 수 있습니다.',['reverseAxis'],[0,1],null,1],
+      ['reboundAxis','C','반동 축',16,'이 코어가 선택지에 등장할 수 있습니다.',['cycleBell'],[0,1],null,1],
+      ['jesterCandle','C','광대의 촛불',36,'이 코어가 선택지에 등장할 수 있습니다.',['reboundAxis'],[1,1],null,1],
+      ['goldenCrest','C','황금 문장',110,'이 코어가 선택지에 등장할 수 있습니다.',['jesterCandle'],[2,1],null,1],
+      ['rateUp','C','코어 확률 업',20,'런 전에 확률 업 코어 1개를 고릅니다. 훨씬 자주 등장합니다.',['coreReroll2'],[0,1],['core',5],1],
+      ['rateUp2','C','코어 확률 업 II',150,'확률 업 코어를 1개 더 고릅니다.',['coreReroll2'],[4,1],['blast',8],1],
+      ['blastUnlock','B','블라스트 슬롯머신 해금',60,'새로운 블라스트 슬롯머신을 해금합니다.',['sigil'],[1,1],null,1],
+      ['blastMastery','B','블라스트 숙련',30,'블라스트로 새 당첨이 생기지 않으면 다음 스핀 비용 -50 골드.',['blastUnlock'],[1,1],null,1],
+      ['blastCart','B','블라스트 카트',20,'이 코어가 선택지에 등장할 수 있습니다.',['blastUnlock'],[1,1],null,1],
+      ['updraft','B','상승 깃털',20,'이 코어가 선택지에 등장할 수 있습니다.',['blastCart'],[1,1],null,1],
+      ['spore','B','포자 버섯',22,'이 코어가 선택지에 등장할 수 있습니다.',['updraft'],[1,1],null,1],
+      ['arsonist','B','방화범의 라이터',50,'이 코어가 선택지에 등장할 수 있습니다.',['spore'],[2,1],null,1],
+      ['keg','B','화약통',55,'이 코어가 선택지에 등장할 수 있습니다.',['arsonist'],[2,1],null,1],
+      ['burstberry','B','폭발 베리',150,'이 코어가 선택지에 등장할 수 있습니다.',['keg'],[3,1],null,1],
+      ['crest','O','동맹의 문장',15,'진영 시너지 시스템을 해금합니다.',['sigil'],null,null,1],
+      ['collection','O','도감',3,'도감을 해금합니다.',['sigil'],null,null,0],
+      ['arcane','O','비전 진영',40,'비전 진영을 해금합니다.',['crest'],[1,1],null,1],
+      ['abyss','O','심연 진영',70,'심연 진영을 해금합니다.',['arcane'],[2,1],null,1],
+      ['undead','O','언데드 진영',70,'언데드 진영을 해금합니다.',['abyss'],[2,1],null,1],
+      ['celestial','O','천상 진영',120,'천상 진영을 해금합니다.',['undead'],[3,0],null,1],
     ];
+    const GROUPS = {
+      supply: ['life1','life2','noviceShield','comeback','gateRec','initSupply','supplyWh','expedition','contractExt','retry1','retry2','interest','victory','spareSpin'],
+      units: ['cmd1','cmd2','cmd3','dormant','calcLuck','bloodbath','predatory','rapid','versatile','anchored','heavy'],
+      research: ['advUnlock','advR1','advR2','rareUnlock','rareR1','rareR2','legUnlock','legR1','legR2','prismUnlock','prismR1','prismR2','fateUnlock','twin','breeze','omen','special','mastery','rift','constellation','sanctum','gambit','questReroll'],
+      shop: ['reroll','recycling','regulars','dustCloak','cursedMushroom','shieldManual','ricochet','tunnel','hourglass','healingSpring','magicCircle','guardianTotem','peddler','chalice','burningHeart'],
+      core: ['goldTooth','witchTorch','chaliceGreed','jokerGrin','blackNote','anvil','crookedFang','magicLamp','clover','tricksterCube','hammer','wildcard','goldenLever','echoShell','greedyPearl','reverseAxis','cycleBell','reboundAxis','jesterCandle','goldenCrest'],
+      blast: ['blastUnlock','blastMastery','blastCart','updraft','spore','arsonist','keg','burstberry'],
+    };
+    const GROUP_NAME = { supply: '보급', units: '유닛', research: '연구·운명의 돌', shop: '상점', core: '코어 해금', blast: '블라스트' };
+    const NODES = {}; NODE_ROWS.forEach(r => { NODES[r[0]] = { id: r[0], cat: r[1], name: r[2], cost: r[3], d: r[4], req: r[5], clear: r[6], grp: r[7], inert: !!r[8] }; });
+    const NODE_CATS = [['R', '연구'], ['S', '보급'], ['U', '유닛'], ['H', '상점'], ['C', '코어'], ['B', '블라스트'], ['O', '기타']];
+    const has = id => !!META.tree[id];
+    const hasN = id => has(id) ? 1 : 0;
+    const clearedAt = (s, d) => [0, 1, 2].filter(x => x >= d).some(x => CLR(s, x)); // 해당 난이도 이상 클리어
+    function nodeLock(n) { // 구매 불가 사유 (없으면 null)
+      for (const r of n.req) if (!has(r)) return `선행: ${NODES[r].name}`;
+      if (n.clear && !clearedAt(n.clear[0], n.clear[1])) return `${STAGES[n.clear[0]].n} ${DIFFS[n.clear[1]].n} 클리어 필요`;
+      if (n.grp) { const mem = GROUPS[n.grp[0]].filter(x => x !== n.id), goal = n.grp[1] >= mem.length ? mem.length : n.grp[1], got = mem.filter(has).length; if (got < goal) return `${GROUP_NAME[n.grp[0]]} 업그레이드 ${got}/${goal} 필요`; }
+      return null;
+    }
+    const baseMax = () => 100 + 20 * (hasN('life1') + hasN('life2'));
+    const rerollCost = () => Math.max(1, rerollCost() - hasN('reroll'));
+    const itemCost = b => Math.max(1, b - (has('regulars') && !G.regUsed ? 1 : 0));
     // 아이템: 구매 즉시 사용. use()가 false면 사용 불가(루비 차감 없음)
     const ITEMS = [
       { id: 'spin',   icon: '🎰', name: '스핀 팩',    desc: '스핀 +5회',          cost: 6, use: () => { G.spins += 5; return true; } },
       { id: 'gold',   icon: '💰', name: '골드 주머니', desc: '골드 +500',          cost: 8, use: () => { G.gold += 500; return true; } },
       { id: 'repair', icon: '🏰', name: '기지 수리',   desc: '기지 HP +50 (최대 100)', cost: 6, fail: '기지 HP가 이미 가득해요',
-        use: () => { if (G.baseHp >= 100) return false; G.baseHp = Math.min(100, G.baseHp + 50); return true; } },
+        use: () => { if (G.baseHp >= baseMax()) return false; G.baseHp = Math.min(baseMax(), G.baseHp + 50); return true; } },
       { id: 'summon', icon: '🎫', name: '소환권',      desc: '랜덤 유닛 1기 즉시 소환', cost: 10, fail: '보드가 가득 찼어요',
         use: () => { if (G.units.length >= maxUnits() && G.bench.length >= BENCH_MAX) return false; summonUnit(weightedRandom(true)); return true; } },
       { id: 'advs',   icon: '✨', name: '승급 소환권', desc: 'Advanced 유닛 1기 즉시 소환', cost: 18, fail: '보드가 가득 찼어요',
@@ -2042,7 +2203,7 @@
     ];
     // 패시브 아이템: 정수로 구매/레벨업(최대 Lv3), 장착 칸(기본 6, 최대 8)을 차지. 일부는 루비(기원석)로 영구 해금
     const iLv = id => (G.items && G.items[id]) || 0;
-    const itemCap = () => 6 + META.up.islot;
+    const itemCap = () => 6 + hasN('slot1') + hasN('slot2');
     const PASSIVES = [
       { id: 'p_atk',  icon: '⚔️', name: '공격의 인장',  d: l => `전 유닛 공격력 +${8 * l}%`, unl: 1 },
       { id: 'p_hp',   icon: '🛡️', name: '강철 부적',    d: l => `전 유닛 체력 +${8 * l}%`, unl: 1 },
@@ -2053,15 +2214,11 @@
       { id: 'p_abs',  icon: '🧪', name: '흡수 촉매',    d: l => `흡수할 때 흡수 LV +${l}`, ruby: 40 },
       { id: 'p_int',  icon: '📈', name: '복리 장부',    d: l => `골드 이자율 +${3 * l}%p (기본 5%)`, ruby: 40 },
     ].map(x => Object.assign(x, { passive: true }));
-    const passiveOpen = p => p.unl || META.unl[p.id];
+    const passiveOpen = p => true;
     const passiveCost = p => 7 + 4 * iLv(p.id);
     const equippedCount = () => Object.keys(G.items || {}).filter(k => G.items[k] > 0).length;
     const itemById = id => ITEMS.find(x => x.id === id) || PASSIVES.find(x => x.id === id);
     function reapplyAll() { [...G.units, ...G.bench].forEach(x => { const r = x.hp / x.maxHp; applyStats(x); x.hp = x.maxHp * r; }); }
-    function unlockRows() {
-      const rows = PASSIVES.filter(p => !passiveOpen(p)).map(p => `<div class="shop-row"><div class="info">🔓 ${p.icon} ${p.name} 해금<small>${p.d(1)} · 정수 상점 진열 풀에 추가 (영구)</small></div><button class="buy" data-unl="${p.id}" ${META.ruby < p.ruby ? 'disabled' : ''}>💎 ${p.ruby}</button></div>`);
-      return rows.length ? '<div class="shop-row"><div class="info">🗝️ 해금<small>기원석(💎)으로 아이템을 영구 해금합니다</small></div></div>' + rows.join('') : '';
-    }
     // 정수 상점: 웨이브마다 4종 진열(패시브 2종 이상 보장), 리롤 가능 (한 판 안에서만 쓰는 재화)
     function rollStock() {
       const shuf = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -2075,7 +2232,7 @@
       try {
         const d = JSON.parse(localStorage.getItem(SAVE_KEY) || localStorage.getItem(LEGACY_SAVE_KEY) || 'null');
         if (d) {
-          META.ruby = d.ruby | 0; META.best = d.best | 0; META.clear = d.clear || {}; META.unl = d.unl || {};
+          META.ruby = d.ruby | 0; META.best = d.best | 0; META.clear = d.clear || {}; META.unl = d.unl || {}; META.tree = d.tree || {};
           if (d.dex) META.dex = { u: d.dex.u || [], t: d.dex.t || [], s: d.dex.s || [], a: d.dex.a || [], l: d.dex.l || [] };
           Object.assign(META.up, d.up || {});
           saveMeta();
@@ -2084,58 +2241,67 @@
     }
     function saveMeta() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(META)); } catch (e) {} }
 
+    let treeCat = 'R';
+    const nodeDepth = n => n.req.length ? 1 + Math.max(...n.req.map(r => nodeDepth(NODES[r]))) : 0;
+    const affordableNodes = () => NODE_ROWS.filter(r => !has(r[0]) && !nodeLock(NODES[r[0]]) && META.ruby >= r[3]).length;
+    function treeHtml() {
+      const bought = NODE_ROWS.filter(r => has(r[0])).length;
+      const chips = NODE_CATS.map(([c, nm]) => { const rows = NODE_ROWS.filter(r => r[1] === c); return `<button class="dtab${c === treeCat ? ' on' : ''}" data-cat="${c}">${nm} ${rows.filter(r => has(r[0])).length}/${rows.length}</button>`; }).join('');
+      const list = NODE_ROWS.map(r => NODES[r[0]]).filter(n => n.cat === treeCat).sort((a, b) => nodeDepth(a) - nodeDepth(b) || a.cost - b.cost).map(n => {
+        const done = has(n.id), lock = done ? null : nodeLock(n);
+        const reqTxt = n.req.length ? '선행: ' + n.req.map(r => (has(r) ? '✔' : '') + NODES[r].name).join(', ') : '시작 노드';
+        const cond = (n.clear ? ` · ${STAGES[n.clear[0]].n} ${DIFFS[n.clear[1]].n} 클리어` : '') + (n.grp ? ` · ${GROUP_NAME[n.grp[0]]} ${n.grp[1] >= GROUPS[n.grp[0]].filter(x => x !== n.id).length ? '전부' : n.grp[1] + '개'} 구매` : '');
+        return `<div class="shop-row"><div class="info">${done ? '✅' : lock ? '🔒' : '🔓'} ${n.name}${n.inert ? ' 🚧' : ''}<small>${n.d}<br>${reqTxt}${cond}${lock ? '<br><b style="color:#fca5a5">' + lock + '</b>' : ''}</small></div><button class="buy" data-node="${n.id}" ${done || lock || META.ruby < n.cost ? 'disabled' : ''}>${done ? '완료' : '💎 ' + n.cost}</button></div>`;
+      }).join('');
+      return `<div class="shop-row"><div class="info">🔮 기원석 업그레이드 트리<small>해금 ${bought}/${NODE_ROWS.length} · 보유 💎 ${META.ruby} · 🚧 = 아직 효과가 연결되지 않은 노드 (해당 시스템 준비 중)</small></div></div><div style="display:flex;gap:4px;flex-wrap:wrap;margin:6px 0">${chips}</div>` + list;
+    }
     let shopTab = 'items';
     function renderShop() {
       $('rubyShop').textContent = META.ruby; $('essShop').textContent = G.essence | 0;
-      $('shopList').innerHTML = shopTab === 'dex' ? dexHtml() : shopTab === 'items'
+      $('shopList').innerHTML = shopTab === 'dex' ? (has('collection') ? dexHtml() : '<div class="shop-row"><div class="info">🔒 도감<small>업그레이드 트리 "기타"의 도감 노드(💎3)를 구매하면 열립니다</small></div></div>') : shopTab === 'items'
         ? `<div class="shop-row"><div class="info">🎒 장착 ${equippedCount()}/${itemCap()}<small>${PASSIVES.filter(p => iLv(p.id) > 0).map(p => p.icon + p.name + ' Lv' + iLv(p.id)).join(' · ') || '없음'}</small></div></div>`
           + ((G.stock || []).map(itemById).filter(Boolean).map(it => {
             if (it.passive) {
-              const cur = iLv(it.id), cost = passiveCost(it), noSlot = cur === 0 && equippedCount() >= itemCap();
+              const cur = iLv(it.id), cost = itemCost(passiveCost(it)), noSlot = cur === 0 && equippedCount() >= itemCap();
               return `<div class="shop-row"><div class="info">${it.icon} ${it.name} ${cur ? 'Lv' + cur + ' → Lv' + (cur + 1) : '(NEW)'}<small>${it.d(cur + 1)}${noSlot ? ' · 장착 칸 부족' : ''}</small></div><button class="buy" data-item="${it.id}" ${G.essence < cost || noSlot ? 'disabled' : ''}>🔷 ${cost}</button></div>`;
             }
-            return `<div class="shop-row"><div class="info">${it.icon} ${it.name}<small>${it.desc}</small></div><button class="buy" data-item="${it.id}" ${G.essence < it.cost ? 'disabled' : ''}>🔷 ${it.cost}</button></div>`;
+            return `<div class="shop-row"><div class="info">${it.icon} ${it.name}<small>${it.desc}</small></div><button class="buy" data-item="${it.id}" ${G.essence < itemCost(it.cost) ? 'disabled' : ''}>🔷 ${itemCost(it.cost)}</button></div>`;
           }).join('') || '<div class="shop-row"><div class="info">품절<small>리롤하거나 다음 웨이브 클리어 후 새 상품이 들어와요</small></div></div>')
-          + `<div class="shop-row"><div class="info">🔄 리롤<small>진열 상품을 새로 고칩니다 (정수는 이번 판에만 쓰여요)</small></div><button class="buy" data-reroll="1" ${G.essence < 2 + G.rerolls ? 'disabled' : ''}>🔷 ${2 + G.rerolls}</button></div>`
-        : UPGRADES.map(u => {
-            const lv = META.up[u.k], maxed = lv >= u.max, cost = u.cost * (lv + 1);
-            return `<div class="shop-row"><div class="info">${u.name}<small>${u.desc} · Lv ${lv}/${u.max}</small></div><button class="buy" data-up="${u.k}" ${maxed || META.ruby < cost ? 'disabled' : ''}>${maxed ? 'MAX' : '💎 ' + cost}</button></div>`;
-          }).join('') + unlockRows();
+          + `<div class="shop-row"><div class="info">🔄 리롤<small>진열 상품을 새로 고칩니다 (정수는 이번 판에만 쓰여요)</small></div><button class="buy" data-reroll="1" ${G.essence < rerollCost() ? 'disabled' : ''}>🔷 ${rerollCost()}</button></div>`
+        : treeHtml();
     }
 
     $('shopList').addEventListener('click', e => {
+      const ch = e.target.closest('[data-cat]');
+      if (ch) { treeCat = ch.dataset.cat; renderShop(); return; }
       const b = e.target.closest('.buy');
       if (!b || b.disabled) return;
       const msg = $('shopMsg');
       if (b.dataset.reroll) {
         if (G.phase === 'over') { msg.textContent = '게임 오버 상태예요. 다시 시작한 뒤 사용하세요'; return; }
-        const rc = 2 + G.rerolls; if (G.essence < rc) { msg.textContent = '정수가 부족해요'; return; }
+        const rc = rerollCost(); if (G.essence < rc) { msg.textContent = '정수가 부족해요'; return; }
         G.essence -= rc; G.rerolls += 1; rollStock(); msg.textContent = '상품을 새로 고쳤어요';
       } else if (b.dataset.item) {
         const it = itemById(b.dataset.item);
         if (G.phase === 'over') { msg.textContent = '게임 오버 상태예요. 다시 시작한 뒤 사용하세요'; return; }
         if (it.passive) {
-          const cur = iLv(it.id), cost = passiveCost(it);
+          const cur = iLv(it.id), cost = itemCost(passiveCost(it));
           if (G.essence < cost) { msg.textContent = '정수가 부족해요'; return; }
           if (cur === 0 && equippedCount() >= itemCap()) { msg.textContent = '장착 칸이 부족해요'; return; }
-          G.essence -= cost; G.items[it.id] = cur + 1; G.stock = G.stock.filter(id => id !== it.id);
+          G.essence -= cost; G.items[it.id] = cur + 1; G.stock = G.stock.filter(id => id !== it.id); if (has('regulars')) G.regUsed = true;
           reapplyAll(); msg.textContent = `${it.icon} ${it.name} Lv${cur + 1}!`;
           saveMeta(); updateHud(); renderShop(); renderField(); renderBoard(); return;
         }
-        if (G.essence < it.cost) { msg.textContent = '정수가 부족해요'; return; }
+        const ic = itemCost(it.cost);
+        if (G.essence < ic) { msg.textContent = '정수가 부족해요'; return; }
         if (!it.use()) { msg.textContent = it.fail; return; }
-        G.essence -= it.cost; G.stock = G.stock.filter(id => id !== it.id);
+        G.essence -= ic; if (has('regulars')) G.regUsed = true; G.stock = G.stock.filter(id => id !== it.id);
         msg.textContent = `${it.name} 사용!`;
-      } else if (b.dataset.unl) {
-        const p = PASSIVES.find(x => x.id === b.dataset.unl);
-        if (!p || META.ruby < p.ruby) return;
-        META.ruby -= p.ruby; META.unl[p.id] = 1; msg.textContent = `${p.icon} ${p.name} 해금!`;
-      } else {
-        const u = UPGRADES.find(x => x.k === b.dataset.up);
-        META.ruby -= u.cost * (META.up[u.k] + 1);
-        META.up[u.k] += 1;
-        G.units.forEach(x => { const r = x.hp / x.maxHp; applyStats(x); x.hp = x.maxHp * r; });
-        msg.textContent = `${u.name} Lv ${META.up[u.k]}!`;
+      } else if (b.dataset.node) {
+        const n = NODES[b.dataset.node];
+        if (!n || has(n.id) || nodeLock(n) || META.ruby < n.cost) return;
+        META.ruby -= n.cost; META.tree[n.id] = 1; msg.textContent = `${n.name} 해금!`;
+        reapplyAll();
       }
       saveMeta(); updateHud(); renderShop(); renderField();
     });
