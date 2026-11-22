@@ -604,6 +604,7 @@
     .slot.on { border-color:#8b75ff; background:#30275b; color:#e8eaf0; }
     .slot.new { border-color:#34d399; border-style:dashed; color:#34d399; background:rgba(52,211,153,.08); }
     .minion { opacity:.85; } .minion.clone { opacity:.6; } .minion.soul { opacity:.55; } .minion.colossus .ico { font-size:34px; } .minion.follower { filter:hue-rotate(120deg); }
+    .core-bar { font-size:11px; color:#a78bfa; padding:2px 10px; min-height:14px; }
     .bench-tag { font-size:9px; color:#c4b5fd; line-height:1.2; white-space:nowrap; }
     .field-pos-label { position: absolute; top: 4px; left: 8px; font-size: 10px; color: #5a6480; pointer-events: none; }
     .drag-ghost {
@@ -645,6 +646,7 @@
     <div class="main-area" id="mainArea">
       <div class="battle-zone">
         <div class="field" id="field"></div>
+        <div class="core-bar" id="coreBar"></div>
         <div class="battle-msg" id="battleMsg"></div>
         <div class="fx" id="fx"></div>
       </div>
@@ -694,7 +696,7 @@
     </div>
 
     <div class="result-screen" id="coreScreen">
-      <div class="rs-card"><h2>Core 선택</h2><p>이번 판의 규칙을 바꿔요</p><div id="coreList" class="shop-list"></div></div>
+      <div class="rs-card"><h2 id="coreTitle">Core 선택</h2><p id="coreSub">이번 판의 규칙을 바꿔요</p><div id="coreList" class="shop-list"></div></div>
     </div>
 
     <div class="result-screen show" id="lobby">
@@ -904,6 +906,7 @@
     }
     function updateHud() {
       goldEl.textContent = G.gold;
+      renderCoreBar();
       $('essence').textContent = G.essence | 0;
       remainSpinEl.textContent = G.spins;
       unitCountEl.textContent = G.units.length + (G.bench.length ? '+' + G.bench.length : '');
@@ -924,7 +927,7 @@
     // ========== 스핀 + 판정 + 소환 ==========
     function weightedRandom(noPrism) {
       const pool = SYMBOLS.filter(x => META.best >= (x.need || 0) && !(noPrism && x.prism) && !(x.prism && !has('legUnlock'))); // 최고 웨이브로 해금
-      const w = x => x.weight * (G.core === 'lucky' && x.name === 'Special' ? 2 : 1);
+      const w = x => x.weight * (hasCore('lucky') && x.name === 'Special' ? 2 : 1);
       let r = Math.random() * pool.reduce((a, x) => a + w(x), 0);
       for (const x of pool) { r -= w(x); if (r <= 0) return x; }
       return pool[0];
@@ -955,12 +958,14 @@
         c.classList.toggle('line-glow', idx.has(i) && lines.length >= 2);
       });
       if (!lines.length) return 0;
+      if (hasCore('goldTooth') && G.gtWave !== G.wave) { G.gtWave = G.wave; G.freeNext = true; } // 금니: 웨이브 첫 당첨 → 다음 스핀 무료
       const jackpot = lines.length >= 2;
       let n = 0, legends = 0, forceAdv = jackpot;
       lines.forEach(l => {
         if (l.prism) { if (summonLegend()) { n++; legends++; } }
-        else if (summonUnit(l.sym, forceAdv ? { minTier: 'a' } : undefined)) { n++; forceAdv = false; }
+        else if (summonUnit(l.sym, forceAdv ? { minTier: 'a' } : undefined)) { n++; forceAdv = false; if (hasCore('echoLantern') && G.lastSym === l.sym.name && summonUnit(l.sym)) { n++; say('🏮 메아리 등불: 같은 심볼이 다시 당첨! 추가 소환'); } }
       });
+      { const lastL = [...lines].reverse().find(l => l.sym); if (lastL) G.lastSym = lastL.sym.name; }
       if (lines.length >= 3) G.spins += 2;
       if (jackpot) G.essence += lines.length >= 3 ? 4 : 2; // 슬롯 다중 당첨/잭팟 → 정수
       if (legends) jackpotFx('🌈 PRISM!<br>전설 유닛 소환!', true);
@@ -987,13 +992,16 @@
       }
 
       G.spinning = true; G.nudge = false;
-      G.gold -= spinCost(); G.nudgeDisc = false; G.spins -= 1;
+      G.gold -= spinCost(); G.freeNext = false; G.halfNext = false; G.nudgeDisc = false; G.spins -= 1;
       updateHud(); say('🎰 스핀 중...');
       cells.forEach(c => { c.classList.remove('matched', 'line-glow'); });
 
       // 결과를 먼저 정하고, 릴이 열 단위로 차례대로 멈추는 연출 (더 빠르고 긴장감 있게)
       const result = Array.from({ length: 9 }, () => weightedRandom());
       if (G.cbSpin) { G.cbSpin = false; const f = weightedRandom(true); [0, 1, 2].forEach(i => { result[i] = f; }); } // 역전 레버: 반드시 당첨
+      const firstOfWave = G.waveSpin === 0; G.waveSpin += 1; G.spinCount += 1;
+      if (hasCore('blackNote') && firstOfWave) result[Math.floor(Math.random() * 9)] = SYMBOLS.find(x => x.name === 'Special'); // 검은 악보
+      if (G.bloodFam) { const bs = SYMBOLS.find(x => x.name === G.bloodFam); G.bloodFam = null; if (bs) [0, 1, 2].forEach(i => { result[i] = bs; }); } // 혈통의 인장
       cells.forEach((cell, i) => {
         cell.classList.add('rolling');
         const iv = setInterval(() => { cell.textContent = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)].icon; }, 55);
@@ -1008,9 +1016,17 @@
 
       setTimeout(() => {
         G.grid = result;
-        if (!evalGrid()) { G.nudge = true; say(`매칭 없음 · 칸을 탭하면 그 열이 한 칸 내려가요 (넛지 -${NUDGE_COST})`); }
-        G.spinning = false;
-        setTimeout(resetSlide, 350);
+        const finishSpin = () => { G.spinning = false; setTimeout(resetSlide, 350); updateHud(); checkDraft(); };
+        const w1 = evalGrid();
+        if (!w1) { G.nudge = true; say(`매칭 없음 · 칸을 탭하면 그 열이 한 칸 내려가요 (넛지 -${NUDGE_COST})`); finishSpin(); }
+        else if (hasCore('doubleLedger')) { // 이중 장부: 당첨 심볼이 사라지고 새 심볼이 떨어져 한 번 더
+          setTimeout(() => {
+            const mi = cells.map((c, i) => c.classList.contains('matched') ? i : -1).filter(i => i >= 0);
+            mi.forEach(i => { G.grid[i] = weightedRandom(); }); drawGrid();
+            say('📒 이중 장부: 당첨 심볼이 사라지고 새 심볼이 떨어집니다!');
+            setTimeout(() => { evalGrid(); finishSpin(); }, 650);
+          }, 900);
+        } else finishSpin();
       }, 380 + 2 * 180 + 180);
       return true;
     }
@@ -1211,6 +1227,7 @@
         n++;
       }
       applyStats(k); $('absorbChoice').classList.remove('show');
+      if (hasCore('nutrientLeaf') && G.nlWave !== G.wave) { G.nlWave = G.wave; G.halfNext = true; }
       battleMsg.textContent = `⚡ ${n}기 전체 흡수! ${k.icon}${k.name} Lv${k.lv}` + (starOf(k) > oldStar ? ` · ★${starOf(k)} 승급!` : '');
       pendingAbsorb = null; sel = -1; renderBoard(); updateHud(); renderField(); promoFlow(k);
     }
@@ -1243,6 +1260,8 @@
       else if (choice?.type === 'swap') { const old = u.imps[choice.index]; u.imps[choice.index] = { id: p.id, lv: 1 }; note = ` · ${IMPR[old.id].n} → ${IMPR[p.id].n}`; dexAdd('t', p.id); }
       else if (conv) note = ` · 변환 +${p.conv}`;
       applyStats(u);
+      if (hasCore('nutrientLeaf') && G.nlWave !== G.wave) { G.nlWave = G.wave; G.halfNext = true; } // 양분 잎
+      if (hasCore('bloodlineSeal') && !G.blUsed) { G.blUsed = true; G.bloodFam = f.fam; } // 혈통의 인장
       $('absorbChoice').classList.remove('show');
       const starUp = starOf(u) > p.oldStar;
       battleMsg.textContent = `${p.name} 흡수 완료! ${u.icon}${u.name} Lv${u.lv}` + (starUp ? ` · ★${starOf(u)} 승급!` : '') + (starUp && u.sub && starOf(u) >= 3 ? ` · ${classOf(u).n} 진화!` : '') + note;
@@ -1739,10 +1758,11 @@
       clearInterval(timer);
       G.minions = G.minions.filter(m => m.persist); // 일반 소환체는 웨이브가 끝나면 사라짐
       const interest = 0; // 이자는 '전술적 이자' 노드로 전투 시작 시 지급
-      const reward = Math.round((180 + G.wave * 50) * (G.core === 'rich' ? 1.5 : 1) * (1 + 0.12 * iLv('p_gold'))) + interest + (has('victory') ? 5 : 0);
+      const reward = Math.round((180 + G.wave * 50) * (hasCore('rich') ? 1.5 : 1) * (1 + 0.12 * iLv('p_gold'))) + interest + (has('victory') ? 5 : 0);
       G.gold += reward;
       const rb = 2 + (G.wave % 5 === 0 ? 5 : 0); // 보스 웨이브 보너스
       META.ruby += rb; G.runRuby += rb; META.best = Math.max(META.best, G.wave); saveMeta();
+      G.waveSpin = 0;
       const sp = 3 + iLv('p_spin'); G.spins += sp;
       if (has('gateRec') && G.wave % 5 === 0) G.baseHp = Math.min(baseMax(), G.baseHp + 20); // 관문 회복
       if (G.stage >= 0 && G.wave >= waveMax()) { stageClear(); return; }
@@ -1769,7 +1789,7 @@
 
     function resetGame() {
       clearInterval(timer);
-      Object.assign(G, { gold: 900 + 50 * hasN('initSupply') + 50 * hasN('supplyWh'), spins: 7, wave: 1, baseHp: baseMax(), nsUsed: false, cbUsed: false, cbSpin: false, lostThisWave: false, regUsed: false, nudgeDisc: false, coreRerolls: hasN('coreReroll') + hasN('coreReroll2'), phase: 'prep', spinning: false, units: [], bench: [], enemies: [], minions: [], runRuby: 0, core: null, essence: 5 + 2 * hasN('emEss'), stock: [], rerolls: 0, items: {} }); newStock();
+      Object.assign(G, { gold: 900 + 50 * hasN('initSupply') + 50 * hasN('supplyWh'), spins: 7, wave: 1, baseHp: baseMax(), nsUsed: false, cbUsed: false, cbSpin: false, lostThisWave: false, regUsed: false, nudgeDisc: false, coreRerolls: hasN('coreReroll') + hasN('coreReroll2'), phase: 'prep', spinning: false, units: [], bench: [], enemies: [], minions: [], runRuby: 0, cores: [], spinCount: 0, draftIdx: 0, waveSpin: 0, freeNext: false, halfNext: false, gtWave: 0, nlWave: 0, blUsed: false, bloodFam: null, lastSym: null, coreRR: 0, essence: 5 + 2 * hasN('emEss'), stock: [], rerolls: 0, items: {} }); newStock();
       $('resultScreen').classList.remove('show');
       G.grid = Array.from({ length: 9 }, () => weightedRandom()); G.nudge = false; sel = -1;
       cells.forEach(c => c.classList.remove('matched'));
@@ -1779,7 +1799,6 @@
       startBtn.disabled = false;
       battleMsg.textContent = '슬롯으로 유닛을 모으세요. 필드에서 드래그해 자유롭게 배치하세요!';
       say('슬라이드 바를 아래로 내려 스핀하세요');
-      showCore();
       renderBoard(); updateHud(); renderField();
     }
 
@@ -1984,29 +2003,75 @@
     $('rsBtn').addEventListener('click', () => resetGame());
 
     // ========== Core / 로비 / 도감 / 연출 ==========
-    const CORES = [
-      { id: 'lucky', n: '🍀 행운', d: '⭐ Special 등장 확률 ×2' },
-      { id: 'rich',  n: '💰 풍요', d: '웨이브 클리어 골드 +50%' },
-      { id: 'cheap', n: '🏷️ 절약', d: '스핀 비용 100 → 70' },
-      { id: 'elite', n: '🎖️ 정예', d: '시작 유닛 +1 (랜덤)' },
+    const CORE_MAX = 8, CORE_DRAFT = [5, 15, 25, 40, 55, 70];
+    const RAR = { c: '일반', u: '고급', r: '희귀' };
+    const CORES = [ // rar: c 일반 / u 고급(Uncommon) / r 희귀. 앞 4개는 우리 게임 자체 코어
+      { id: 'lucky', n: '🍀 행운', d: '⭐ Special 등장 확률 ×2', rar: 'c' },
+      { id: 'rich',  n: '💰 풍요', d: '웨이브 클리어 골드 +50%', rar: 'c' },
+      { id: 'cheap', n: '🏷️ 절약', d: '스핀 비용 100 → 70', rar: 'c' },
+      { id: 'elite', n: '🎖️ 정예', d: '선택 즉시 고급 이상 유닛 1기 소환', rar: 'c' },
+      { id: 'doubleLedger', n: '📒 이중 장부', d: '스핀의 첫 당첨 때 당첨 심볼이 사라지고 새 심볼이 떨어져, 한 번 더 줄을 노립니다', rar: 'r' },
+      { id: 'goldTooth', n: '🦷 금니', d: '웨이브의 첫 당첨 뒤 다음 스핀이 무료', rar: 'u', unlock: 'goldTooth' },
+      { id: 'echoLantern', n: '🏮 메아리 등불', d: '직전에 당첨된 심볼이 다시 당첨되면 유닛 1기를 추가 소환', rar: 'u' },
+      { id: 'nutrientLeaf', n: '🍃 양분 잎', d: '흡수한 뒤 다음 스핀 비용이 절반 (웨이브당 1회)', rar: 'u' },
+      { id: 'bloodlineSeal', n: '🧬 혈통의 인장', d: '첫 흡수 뒤 다음 스핀에 제물 계열 심볼 3개가 한 줄로 나옵니다', rar: 'u' },
+      { id: 'blackNote', n: '🎼 검은 악보', d: '웨이브의 첫 스핀에 ⭐ Special(광대) 심볼이 반드시 하나 나옵니다', rar: 'u', unlock: 'blackNote' },
     ];
-    const spinCost = () => Math.max(0, (G.core === 'cheap' ? 70 : SPIN_COST) - (has('spareSpin') && G.spins === 1 ? 50 : 0) - (G.nudgeDisc ? 50 : 0));
+    const hasCore = id => (G.cores || []).includes(id);
+    const spinCost = () => {
+      if (G.freeNext) return 0;
+      let c = hasCore('cheap') ? 70 : SPIN_COST;
+      if (G.halfNext) c = Math.floor(c / 2);
+      c -= (has('spareSpin') && G.spins === 1 ? 50 : 0) + (G.nudgeDisc ? 50 : 0);
+      return Math.max(0, c);
+    };
     let coreChoices = [];
+    function rollCoreChoices() {
+      const idx = Math.max(0, G.draftIdx - 1), uShare = [0.18, 0.21, 0.24, 0.28, 0.31, 0.33, 0.34, 0.35][Math.min(idx, 7)], rShare = 0.08 + 0.02 * idx;
+      const avail = CORES.filter(c => !hasCore(c.id) && (!c.unlock || has(c.unlock))), out = [];
+      const guarantee = (idx === 0 && has('radiantFirst')) || (idx === 1 && has('lingering'));
+      for (let k = 0; k < 3; k++) {
+        const pool = avail.filter(c => !out.includes(c)); if (!pool.length) break;
+        let rar = Math.random() < rShare ? 'r' : Math.random() < uShare / (1 - rShare) ? 'u' : 'c';
+        if (guarantee && k === 0 && pool.some(c => c.rar !== 'c')) rar = pool.some(c => c.rar === 'u') && (Math.random() < 0.6 || !pool.some(c => c.rar === 'r')) ? 'u' : 'r';
+        const sub = pool.filter(c => c.rar === rar), src = sub.length ? sub : pool;
+        out.push(src[Math.floor(Math.random() * src.length)]);
+      }
+      coreChoices = out;
+    }
+    const nextDraftAt = () => G.draftIdx >= CORE_DRAFT.length ? null : CORE_DRAFT[G.draftIdx] - (G.draftIdx === 0 && has('earlyPick') ? 1 : 0);
+    function renderCoreBar() {
+      const el = $('coreBar'); if (!el) return;
+      const nx = nextDraftAt(), left = nx == null ? null : Math.max(0, nx - (G.spinCount || 0));
+      const cs = G.cores || []; el.innerHTML = `🧿 코어 ${cs.length}/${CORE_MAX} ${cs.map(id => CORES.find(c => c.id === id).n.split(' ')[0]).join(' ')}` + (left == null ? ' · 코어 선택 완료' : cs.length >= CORE_MAX ? '' : ` · 다음 코어까지 ${left}스핀`);
+    }
+    function checkDraft() { // 스핀 누적 5/15/25/40/55/70회에 코어 3택1
+      const nx = nextDraftAt(); if (nx == null || G.spinCount < nx) return;
+      G.draftIdx += 1;
+      if (G.cores.length >= CORE_MAX) return;
+      G.coreRR = 0; showCore(true);
+    }
     function showCore(fresh) {
-      if (fresh !== false || !coreChoices.length) coreChoices = [...CORES].sort(() => Math.random() - 0.5).slice(0, 3);
-      $('coreList').innerHTML = coreChoices.map(c => `<div class="shop-row"><div class="info">${c.n}<small>${c.d}</small></div><button class="buy" data-core="${c.id}">선택</button></div>`).join('')
-        + (G.coreRerolls > 0 ? `<div class="shop-row"><div class="info">🔄 코어 리롤<small>선택지를 무료로 다시 뽑습니다 (남은 ${G.coreRerolls}회)</small></div><button class="buy" data-corereroll="1">리롤</button></div>` : '');
+      if (fresh !== false || !coreChoices.length) rollCoreChoices();
+      const rc = 3 + G.coreRR;
+      $('coreTitle').textContent = `🧿 코어 선택 (${G.cores.length}/${CORE_MAX})`;
+      $('coreSub').textContent = `스핀 ${G.spinCount}회 달성 · 하나를 무료로 고르세요. 효과는 이번 판 내내 유지돼요`;
+      $('coreList').innerHTML = coreChoices.map(c => `<div class="shop-row"><div class="info">${c.n} <small style="display:inline">[${RAR[c.rar]}]</small><small>${c.d}</small></div><button class="buy" data-core="${c.id}">선택</button></div>`).join('')
+        + `<div class="shop-row"><div class="info">🔄 코어 리롤<small>${G.coreRerolls > 0 ? `무료 리롤 ${G.coreRerolls}회 남음` : `정수 🔷 ${rc} (지금 ${G.essence | 0})`}</small></div><button class="buy" data-corereroll="1" ${G.coreRerolls > 0 || G.essence >= rc ? '' : 'disabled'}>리롤</button></div>`;
       $('coreScreen').classList.add('show');
     }
     $('coreList').addEventListener('click', e => {
       const b = e.target.closest('.buy');
-      if (!b) return;
-      if (b.dataset.corereroll) { if (G.coreRerolls > 0) { G.coreRerolls--; showCore(true); } return; }
-      const c = CORES.find(x => x.id === b.dataset.core);
-      G.core = c.id;
-      if (c.id === 'elite') summonUnit(weightedRandom(true));
+      if (!b || b.disabled) return;
+      if (b.dataset.corereroll) {
+        if (G.coreRerolls > 0) G.coreRerolls--; else { const rc = 3 + G.coreRR; if (G.essence < rc) return; G.essence -= rc; G.coreRR++; }
+        showCore(true); updateHud(); return;
+      }
+      const c = CORES.find(x => x.id === b.dataset.core); if (!c) return;
+      G.cores.push(c.id);
+      if (c.id === 'elite') summonUnit(weightedRandom(true), { minTier: 'a' });
       $('coreScreen').classList.remove('show');
-      battleMsg.textContent = `Core ${c.n} · 필드에서 유닛을 드래그해 원하는 위치에 놓으세요`;
+      battleMsg.textContent = `🧿 코어 획득: ${c.n} (${G.cores.length}/${CORE_MAX}) · ${c.d}`;
       updateHud();
     });
     function updateRsUpg() { const n = affordableNodes(); $('rsUpg').textContent = n ? `🔮 업그레이드 (구매 가능 ${n})` : '🔮 업그레이드'; }
@@ -2177,6 +2242,7 @@
     };
     const GROUP_NAME = { supply: '보급', units: '유닛', research: '연구·운명의 돌', shop: '상점', core: '코어 해금', blast: '블라스트' };
     const NODES = {}; NODE_ROWS.forEach(r => { NODES[r[0]] = { id: r[0], cat: r[1], name: r[2], cost: r[3], d: r[4], req: r[5], clear: r[6], grp: r[7], inert: !!r[8] }; });
+    ['earlyPick', 'radiantFirst', 'lingering', 'goldTooth', 'blackNote'].forEach(id => { NODES[id].inert = false; }); // 코어 시스템과 연결됨
     const NODE_CATS = [['R', '연구'], ['S', '보급'], ['U', '유닛'], ['H', '상점'], ['C', '코어'], ['B', '블라스트'], ['O', '기타']];
     const has = id => !!META.tree[id];
     const hasN = id => has(id) ? 1 : 0;
