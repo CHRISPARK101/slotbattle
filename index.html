@@ -604,7 +604,33 @@
     .slot.on { border-color:#8b75ff; background:#30275b; color:#e8eaf0; }
     .slot.new { border-color:#34d399; border-style:dashed; color:#34d399; background:rgba(52,211,153,.08); }
     .minion { opacity:.85; } .minion.clone { opacity:.6; } .minion.soul { opacity:.55; } .minion.colossus .ico { font-size:34px; } .minion.follower { filter:hue-rotate(120deg); }
-    .core-bar { font-size:11px; color:#a78bfa; padding:2px 10px; min-height:14px; }
+    .battle-status { margin:2px 8px 4px; }
+    .core-status { margin-top:6px; font-size:11px; }
+    .inv-row { display:flex; flex-direction:column; gap:3px; }
+    .inv-label { font-size:10px; color:#7a84a5; display:flex; justify-content:space-between; align-items:center; padding:0 2px; }
+    .inv-label b { color:#c5cbe0; font-weight:700; }
+    /* 아이템: 가로 한 줄 (기본 6칸) */
+    .inv-grid { display:grid; grid-template-columns:repeat(6, 1fr); gap:5px; }
+    .inv-grid.items-7 { grid-template-columns:repeat(7, 1fr); }
+    .inv-grid.items-8 { grid-template-columns:repeat(8, 1fr); }
+    .inv-grid.cores { grid-template-columns:repeat(4, 1fr); gap:6px; }
+    .inv-slot {
+      aspect-ratio:1; min-height:0; border-radius:9px; border:1px dashed #3a415c;
+      background:#1a1f33; display:flex; flex-direction:column; align-items:center; justify-content:center;
+      font-size:clamp(13px, 4vw, 17px); color:#4b5578; cursor:default; position:relative;
+      transition:border-color .15s, box-shadow .15s, transform .12s;
+    }
+    .inv-slot.filled {
+      border-style:solid; border-color:#465078; background:linear-gradient(145deg,#2b3150,#232840);
+      color:#e8eaf0; cursor:pointer;
+    }
+    .inv-slot.filled:active { transform:scale(.94); }
+    .inv-slot.filled.on { border-color:#34d399; box-shadow:0 0 10px rgba(52,211,153,.25); }
+    .inv-slot.filled.core { border-color:#8b75ff; background:linear-gradient(145deg,#30275b,#252b42); }
+    .inv-slot .ilv { font-size:9px; color:#a78bfa; font-weight:800; line-height:1; margin-top:1px; }
+    .inv-slot .ist { font-size:8px; color:#6ee7b7; line-height:1; }
+    .inv-slot.empty::after { content:'·'; opacity:.45; }
+    .core-bar { display:none; }
     .bench-tag { font-size:9px; color:#c4b5fd; line-height:1.2; white-space:nowrap; }
     .field-pos-label { position: absolute; top: 4px; left: 8px; font-size: 10px; color: #5a6480; pointer-events: none; }
     .drag-ghost {
@@ -638,7 +664,8 @@
       <span>💰 <span id="gold">900</span></span>
       <span>🔷 <span id="essence">0</span></span>
       <span class="wave-strip"><span id="wave">W1</span></span>
-      <span>🏰 <span id="baseHp">100</span></span>
+      <span id="livesWrap" title="생명">❤️ <b id="lives">3</b></span>
+      <span id="shieldWrap" title="하트 보호막 · 0이 되면 생명 -1">🛡️ <span id="baseHp">50</span></span>
       <span><span id="unitCount">0</span>/<span id="maxUnits">5</span></span>
       <span>💎 <span id="ruby">0</span></span>
     </div>
@@ -646,7 +673,7 @@
     <div class="main-area" id="mainArea">
       <div class="battle-zone">
         <div class="field" id="field"></div>
-        <div class="core-bar" id="coreBar"></div>
+        <div class="core-status battle-status" id="coreStatus2"></div>
         <div class="battle-msg" id="battleMsg"></div>
         <div class="fx" id="fx"></div>
       </div>
@@ -742,6 +769,7 @@
           <div>남은 횟수 <strong id="remainSpin">5</strong></div>
         </div>
         <div class="summon-log" id="summonLog">슬라이드 바를 아래로 내려 스핀하세요</div>
+        <div class="core-status" id="coreStatus"></div>
       </div>
     </div>
   </div>
@@ -778,6 +806,7 @@
       const w = (G && G.wave) || 1, rs = k => 1 + 0.3 * hasN(k + 'R1') + 0.4 * hasN(k + 'R2');
       const wt = { n: Math.max(40, 80 - w * 0.8), a: has('advUnlock') ? (14 + w * 0.3) * rs('adv') : 0, r: has('rareUnlock') && w >= 3 ? (3 + w * 0.3) * rs('rare') : 0, l: has('legUnlock') && w >= 6 ? (0.8 + w * 0.12) * rs('leg') : 0, p: has('prismUnlock') && w >= 10 ? (0.2 + w * 0.05) * rs('prism') : 0 };
       const ok = TORDER.filter(t => TORDER.indexOf(t) >= TORDER.indexOf(min || 'n') && (wt[t] > 0 || t === 'n')), tot = ok.reduce((a, t) => a + wt[t], 0);
+      if (!ok.length) return 'n'; // 잭팟 최소 등급(고급)이 아직 해금 전이면 일반으로
       let r = Math.random() * tot; for (const t of ok) { r -= wt[t]; if (r <= 0) return t; } return ok[ok.length - 1];
     }
     const PAYLINES = [
@@ -806,6 +835,7 @@
     const slideFill = document.getElementById('slideFill');
 
     function openPanel() {
+      if (G.phase === 'fight') { battleMsg.textContent = '전투 중에는 슬롯을 열 수 없어요'; return; }
       slotPanel.classList.add('open');
       overlay.classList.add('show');
       mainArea.classList.add('dimmed');
@@ -919,6 +949,15 @@
           (nb > w && nb <= mx ? `<i class="ws-boss">👹${nb}</i>` : '');
       }
       $('baseHp').textContent = Math.max(0, Math.ceil(G.baseHp));
+      if ($('lives')) $('lives').textContent = (G.lives == null ? 3 : G.lives);
+      // 보호막이 낮으면 시각 강조
+      const sw = $('shieldWrap');
+      if (sw) {
+        const ratio = G.baseHp / Math.max(1, baseMax());
+        sw.style.borderColor = ratio <= 0.35 ? '#f87171' : '';
+        sw.style.color = ratio <= 0.35 ? '#fca5a5' : '';
+      }
+      renderStatus();
       $('ruby').textContent = META.ruby;
       $('costEl').textContent = spinCost();
       $('maxUnits').textContent = maxUnits();
@@ -958,13 +997,14 @@
         c.classList.toggle('line-glow', idx.has(i) && lines.length >= 2);
       });
       if (!lines.length) return 0;
-      if (hasCore('goldTooth') && G.gtWave !== G.wave) { G.gtWave = G.wave; G.freeNext = true; } // 금니: 웨이브 첫 당첨 → 다음 스핀 무료
+      if (hasCore('goldTooth') && G.gtWave !== G.wave) { G.gtWave = G.wave; G.freeNext = true; coreFire('goldTooth'); } // 금니: 웨이브 첫 당첨 → 다음 스핀 무료
       const jackpot = lines.length >= 2;
-      let n = 0, legends = 0, forceAdv = jackpot;
+      let n = 0, legends = 0, forceAdv = jackpot || !!G.golden;
       lines.forEach(l => {
         if (l.prism) { if (summonLegend()) { n++; legends++; } }
-        else if (summonUnit(l.sym, forceAdv ? { minTier: 'a' } : undefined)) { n++; forceAdv = false; if (hasCore('echoLantern') && G.lastSym === l.sym.name && summonUnit(l.sym)) { n++; say('🏮 메아리 등불: 같은 심볼이 다시 당첨! 추가 소환'); } }
+        else if (summonUnit(l.sym, forceAdv ? { minTier: 'a' } : undefined)) { n++; forceAdv = false; if (hasCore('echoLantern') && G.lastSym === l.sym.name && summonUnit(l.sym)) { n++; coreFire('echoLantern'); say('🏮 메아리 등불: 같은 심볼이 다시 당첨! 추가 소환'); } }
       });
+      if (hasCore('resonantAnvil')) lines.forEach(l => { if (l.sym && g.filter(x => x.name === l.sym.name).length >= 4 && summonUnit(l.sym)) { n++; coreFire('resonantAnvil'); say('⚒️ 공명 모루: 유닛 1기 추가 소환'); } });
       { const lastL = [...lines].reverse().find(l => l.sym); if (lastL) G.lastSym = lastL.sym.name; }
       if (lines.length >= 3) G.spins += 2;
       if (jackpot) G.essence += lines.length >= 3 ? 4 : 2; // 슬롯 다중 당첨/잭팟 → 정수
@@ -984,6 +1024,7 @@
     // 스핀이 시작되면 true, 거절되면 false (이유는 로그로 안내)
     function doSpin() {
       if (G.spinning || G.phase === 'over') return false;
+      if (G.phase === 'fight') { say('전투 중에는 슬롯을 돌릴 수 없어요. 웨이브가 끝난 뒤 준비 단계에서 돌리세요'); return false; }
       if (G.spins <= 0) { say('남은 횟수가 없어요. 웨이브를 클리어하면 충전됩니다'); return false; }
       if (G.gold < spinCost()) { say('골드가 부족해요'); return false; }
       if (G.units.length >= maxUnits() && G.bench.length >= BENCH_MAX) {
@@ -992,7 +1033,7 @@
       }
 
       G.spinning = true; G.nudge = false;
-      G.gold -= spinCost(); G.freeNext = false; G.halfNext = false; G.nudgeDisc = false; G.spins -= 1;
+      G.gold -= spinCost(); G.freeNext = false; G.halfNext = false; G.nudgeDisc = false; G.rewind = false; G.spins -= 1;
       updateHud(); say('🎰 스핀 중...');
       cells.forEach(c => { c.classList.remove('matched', 'line-glow'); });
 
@@ -1000,7 +1041,12 @@
       const result = Array.from({ length: 9 }, () => weightedRandom());
       if (G.cbSpin) { G.cbSpin = false; const f = weightedRandom(true); [0, 1, 2].forEach(i => { result[i] = f; }); } // 역전 레버: 반드시 당첨
       const firstOfWave = G.waveSpin === 0; G.waveSpin += 1; G.spinCount += 1;
+      if (hasCore('blackNote') && firstOfWave) coreFire('blackNote');
       if (hasCore('blackNote') && firstOfWave) result[Math.floor(Math.random() * 9)] = SYMBOLS.find(x => x.name === 'Special'); // 검은 악보
+      { const SP = SYMBOLS.find(x => x.name === 'Special');
+        if (hasCore('tornNote') && G.spinCount % 6 === 0) { result[Math.floor(Math.random() * 9)] = SP; coreFire('tornNote'); }
+        if (hasCore('jokerSeed')) result.forEach((_, i) => { if (Math.random() < 0.015) { result[i] = SP; coreFire('jokerSeed'); } });
+        G.golden = hasCore('goldenLever') && G.spinCount % 5 === 0; if (G.golden) coreFire('goldenLever'); G.reb = false; G.rebCol = null; }
       if (G.bloodFam) { const bs = SYMBOLS.find(x => x.name === G.bloodFam); G.bloodFam = null; if (bs) [0, 1, 2].forEach(i => { result[i] = bs; }); } // 혈통의 인장
       cells.forEach((cell, i) => {
         cell.classList.add('rolling');
@@ -1018,12 +1064,12 @@
         G.grid = result;
         const finishSpin = () => { G.spinning = false; setTimeout(resetSlide, 350); updateHud(); checkDraft(); };
         const w1 = evalGrid();
-        if (!w1) { G.nudge = true; say(`매칭 없음 · 칸을 탭하면 그 열이 한 칸 내려가요 (넛지 -${NUDGE_COST})`); finishSpin(); }
+        if (!w1 && !(onMiss(firstOfWave) && evalGrid())) { G.nudge = true; say(`매칭 없음 · 칸을 탭하면 그 열이 한 칸 내려가요 (넛지 -${NUDGE_COST})`); finishSpin(); }
         else if (hasCore('doubleLedger')) { // 이중 장부: 당첨 심볼이 사라지고 새 심볼이 떨어져 한 번 더
           setTimeout(() => {
-            const mi = cells.map((c, i) => c.classList.contains('matched') ? i : -1).filter(i => i >= 0);
+            const mi = Array.from(cells).map((c, i) => c.classList.contains('matched') ? i : -1).filter(i => i >= 0);
             mi.forEach(i => { G.grid[i] = weightedRandom(); }); drawGrid();
-            say('📒 이중 장부: 당첨 심볼이 사라지고 새 심볼이 떨어집니다!');
+            coreFire('doubleLedger'); say('📒 이중 장부: 당첨 심볼이 사라지고 새 심볼이 떨어집니다!');
             setTimeout(() => { evalGrid(); finishSpin(); }, 650);
           }, 900);
         } else finishSpin();
@@ -1031,16 +1077,33 @@
       return true;
     }
 
+    // 스핀 실패 시 코어 효과. 그리드가 바뀌면 true (다시 판정)
+    function onMiss(first) {
+      const g = G.grid, cnt = {}; let changed = false;
+      g.forEach(x => { cnt[x.name] = (cnt[x.name] || 0) + 1; });
+      if (hasCore('echoMirror') && Object.values(cnt).some(v => v >= 4)) { G.essence += 1; coreFire('echoMirror'); say('🪞 에코 거울: 에센스 +1'); }
+      if (hasCore('rewindClock')) { G.rewind = true; coreFire('rewindClock'); }
+      if (hasCore('copycap')) for (let c = 0; c < 3; c++) if (g[c].name === g[c + 6].name && g[c + 3].name !== g[c].name) { g[c + 3] = g[c]; changed = true; coreFire('copycap'); say('🧢 복사 모자: 가운데 심볼 변경'); break; }
+      if (first && hasCore('twinCherries')) { g[2] = g[0]; g[5] = g[3]; g[8] = g[6]; changed = true; coreFire('twinCherries'); say('🍒 쌍둥이 체리: 마지막 릴 복사'); }
+      if (first && hasCore('twistedBell')) { G.freeNext = true; G.spins += 1; coreFire('twistedBell'); say('🛎️ 뒤틀린 종: 다음 스핀 무료 (횟수 환급)'); }
+      if (changed) drawGrid();
+      return changed;
+    }
+
     // 넛지: 매칭 실패 직후 1회, 탭한 칸의 열을 한 칸 내리고 맨 위에 새 심볼
     function nudge(i) {
       if (!G.nudge || G.spinning) return;
       if (G.gold < NUDGE_COST) { say('골드가 부족해요'); return; }
+      if (G.rebCol != null && i % 3 !== G.rebCol) { say('↩️ 반동 축: 방금 넛지한 릴만 다시 넛지할 수 있어요'); return; }
       G.gold -= NUDGE_COST; G.nudge = false;
-      const c = i % 3, g = G.grid;
-      g[c + 6] = g[c + 3]; g[c + 3] = g[c]; g[c] = weightedRandom();
+      const c = i % 3, g = G.grid, up = hasCore('reverseAxis') && i >= 6, cyc = hasCore('cycleBell'); if (up) coreFire('reverseAxis'); if (cyc) coreFire('cycleBell');
+      if (hasCore('reboundAxis') && !G.reb) { G.reb = true; G.rebCol = c; G.nudge = true; coreFire('reboundAxis'); }
+      if (up) { const o = g[c]; g[c] = g[c + 3]; g[c + 3] = g[c + 6]; g[c + 6] = cyc ? o : weightedRandom(); }
+      else { const o = g[c + 6]; g[c + 6] = g[c + 3]; g[c + 3] = g[c]; g[c] = cyc ? o : weightedRandom(); }
       drawGrid(); updateHud();
       [c, c + 3, c + 6].forEach(k => { cells[k].classList.add('spinning'); setTimeout(() => cells[k].classList.remove('spinning'), 400); });
-      if (!evalGrid()) { say('넛지 실패…'); if (has('nudgeMastery')) { G.nudgeDisc = true; say('넛지 실패… (넛지 숙련: 다음 스핀 -50)'); } }
+      const hit = evalGrid(); if (hit && hasCore('goldenCrest')) { G.nudge = true; coreFire('goldenCrest'); say('👑 황금 문장: 넛지 횟수 유지'); }
+      if (!hit) { say('넛지 실패…'); if (has('nudgeMastery')) { G.nudgeDisc = true; say('넛지 실패… (넛지 숙련: 다음 스핀 -50)'); } }
     }
     cells.forEach((el, i) => el.addEventListener('click', () => nudge(i)));
 
@@ -1227,7 +1290,7 @@
         n++;
       }
       applyStats(k); $('absorbChoice').classList.remove('show');
-      if (hasCore('nutrientLeaf') && G.nlWave !== G.wave) { G.nlWave = G.wave; G.halfNext = true; }
+      if (hasCore('nutrientLeaf') && G.nlWave !== G.wave) { G.nlWave = G.wave; G.halfNext = true; coreFire('nutrientLeaf'); }
       battleMsg.textContent = `⚡ ${n}기 전체 흡수! ${k.icon}${k.name} Lv${k.lv}` + (starOf(k) > oldStar ? ` · ★${starOf(k)} 승급!` : '');
       pendingAbsorb = null; sel = -1; renderBoard(); updateHud(); renderField(); promoFlow(k);
     }
@@ -1260,8 +1323,8 @@
       else if (choice?.type === 'swap') { const old = u.imps[choice.index]; u.imps[choice.index] = { id: p.id, lv: 1 }; note = ` · ${IMPR[old.id].n} → ${IMPR[p.id].n}`; dexAdd('t', p.id); }
       else if (conv) note = ` · 변환 +${p.conv}`;
       applyStats(u);
-      if (hasCore('nutrientLeaf') && G.nlWave !== G.wave) { G.nlWave = G.wave; G.halfNext = true; } // 양분 잎
-      if (hasCore('bloodlineSeal') && !G.blUsed) { G.blUsed = true; G.bloodFam = f.fam; } // 혈통의 인장
+      if (hasCore('nutrientLeaf') && G.nlWave !== G.wave) { G.nlWave = G.wave; G.halfNext = true; coreFire('nutrientLeaf'); } // 양분 잎
+      if (hasCore('bloodlineSeal') && !G.blUsed) { G.blUsed = true; G.bloodFam = f.fam; coreFire('bloodlineSeal'); } // 혈통의 인장
       $('absorbChoice').classList.remove('show');
       const starUp = starOf(u) > p.oldStar;
       battleMsg.textContent = `${p.name} 흡수 완료! ${u.icon}${u.name} Lv${u.lv}` + (starUp ? ` · ★${starOf(u)} 승급!` : '') + (starUp && u.sub && starOf(u) >= 3 ? ` · ${classOf(u).n} 진화!` : '') + note;
@@ -1271,6 +1334,11 @@
     }
     let suppressBoardClickUntil = 0;
     unitBoard.addEventListener('click', e => {
+      if (Date.now() < suppressBoardClickUntil) return;
+      if (e.target.closest('.absorb-toggle')) {
+        setAbsorbMode(!absorbMode);
+        return;
+      }
       const card = e.target.closest('.unit-card');
       if (!card || card.classList.contains('empty')) return;
       detIdx = +card.dataset.i; openDetail();
@@ -1284,7 +1352,7 @@
     }
     function clearFieldDragUI() {
       field.querySelectorAll('.actor.ally').forEach(a => a.classList.remove('dragging', 'drop-target'));
-      unitBoard.querySelectorAll('.drag-source').forEach(x => x.classList.remove('drag-source'));
+      unitBoard.querySelectorAll('.drag-source, .drop-target').forEach(x => x.classList.remove('drag-source', 'drop-target'));
       document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('drag-over'));
       if (fieldGhost) { fieldGhost.remove(); fieldGhost = null; }
     }
@@ -1311,6 +1379,18 @@
       const i = Number(actor.dataset.i);
       dragInfo = { index: i, x: e.clientX, y: e.clientY, moved: false, fromField: true };
       actor.setPointerCapture?.(e.pointerId);
+    });
+    // 보드(로스터/대기) 유닛 드래그 시작
+    unitBoard.addEventListener('pointerdown', e => {
+      if (G.phase !== 'prep') return;
+      if (e.target.closest('.absorb-toggle')) return;
+      const card = e.target.closest('.unit-card');
+      if (!card || card.classList.contains('empty')) return;
+      e.preventDefault();
+      const i = Number(card.dataset.i);
+      if (!Number.isFinite(i)) return;
+      dragInfo = { index: i, x: e.clientX, y: e.clientY, moved: false, fromBoard: true };
+      card.setPointerCapture?.(e.pointerId);
     });
     document.addEventListener('pointermove', e => {
       if (!dragInfo) return;
@@ -1343,10 +1423,13 @@
         }
       }
 
-      if (dragInfo.fromBoard && dragInfo.index >= 100 && !absorbMode) {
+      if (dragInfo.fromBoard) {
         field.querySelectorAll('.actor.ally').forEach(a => a.classList.remove('drop-target'));
         const tg = allyTargetAt(e.clientX, e.clientY);
-        if (tg) tg.classList.add('drop-target');
+        if (tg && Number(tg.dataset.i) !== dragInfo.index) tg.classList.add('drop-target');
+        unitBoard.querySelectorAll('.unit-card').forEach(c => c.classList.remove('drop-target'));
+        const cardT = document.elementFromPoint(e.clientX, e.clientY)?.closest?.('.unit-card');
+        if (cardT && Number(cardT.dataset.i) !== dragInfo.index) cardT.classList.add('drop-target');
       }
       document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('drag-over'));
       const over = document.elementFromPoint(e.clientX, e.clientY)?.closest?.('.drop-zone');
@@ -1396,22 +1479,26 @@
         battleMsg.textContent = '아군 배치 영역 안에 놓아주세요.';
       }
 
-      // 3-a) 대기 유닛 → 필드 위 유닛에 드롭 = 바로 흡수
-      if (d.fromBoard && d.index >= 100) {
+      // 3) 보드에서 드래그: 다른 유닛 위 = 흡수, 대기는 필드에 놓으면 출전
+      if (d.fromBoard) {
         const act = allyTargetAt(e.clientX, e.clientY);
-        if (act && act.dataset.i !== undefined) { beginAbsorb(Number(act.dataset.i), d.index); return; }
-      }
-      // 3) 예비 → 필드 출전 후 그 위치에 배치
-      if (d.fromBoard && d.index >= 100) {
-        const zone = document.elementFromPoint(e.clientX, e.clientY)?.closest?.('.drop-zone, #allyField');
-        if (zone) {
-          const bi = d.index - 100;
-          if (placeFromBench(bi)) {
-            // 방금 추가된 유닛을 드롭 위치로
-            const ni = G.units.length - 1;
-            setUnitPosFromPoint(ni, e.clientX, e.clientY);
-            renderBoard(); renderField(); updateHud();
-            battleMsg.textContent = '후방 대기 유닛 출전 및 배치 완료!';
+        if (act && act.dataset.i !== undefined && Number(act.dataset.i) !== d.index) {
+          beginAbsorb(Number(act.dataset.i), d.index); return;
+        }
+        const card = document.elementFromPoint(e.clientX, e.clientY)?.closest?.('.unit-card');
+        if (card && Number(card.dataset.i) !== d.index) {
+          beginAbsorb(Number(card.dataset.i), d.index); return;
+        }
+        if (d.index >= 100) {
+          const zone = document.elementFromPoint(e.clientX, e.clientY)?.closest?.('.drop-zone, #allyField');
+          if (zone) {
+            const bi = d.index - 100;
+            if (placeFromBench(bi)) {
+              const ni = G.units.length - 1;
+              setUnitPosFromPoint(ni, e.clientX, e.clientY);
+              renderBoard(); renderField(); updateHud();
+              battleMsg.textContent = '후방 대기 유닛 출전 및 배치 완료!';
+            }
           }
         }
       }
@@ -1425,8 +1512,11 @@
       // 자유 배치: 한 줄로 표시. 왼쪽(앞) → 오른쪽(뒤)
       const unitsHtml = G.units.map((u, i) => card(u, i, false)).join('') ||
         (G.phase === 'prep' ? '<div class="unit-card empty" style="opacity:.5;min-width:80px">유닛 없음</div>' : '');
-      unitBoard.innerHTML = `<div class="unit-board-label board-tools"><span>ROSTER</span></div>` +
-        unitsHtml + benchHtml;
+      const full = G.units.length >= maxUnits() && G.bench.length >= BENCH_MAX;
+      unitBoard.innerHTML = `<div class="unit-board-label board-tools">
+        <span>ROSTER</span>
+        <button type="button" class="absorb-toggle${absorbMode ? ' on' : ''}${full ? ' urgent' : ''}" id="absToggle">${absorbMode ? '흡수 ON' : '흡수'}</button>
+      </div>` + unitsHtml + benchHtml;
       unitBoard.classList.toggle('absorb-mode', absorbMode);
     }
     function actorHtml(a, cls, idx) {
@@ -1529,9 +1619,33 @@
       return { icon, maxHp: hp, hp, atk, spd, cd: spd, role, stun: 0, burn: 0, burnDps: 0 };
     }
 
+    function cloneRoster(list) {
+      return JSON.parse(JSON.stringify(list || []));
+    }
+    function snapshotWaveRoster() {
+      // 웨이브 시작 멤버 저장 → 하트 소모 재도전 시 전부 복원
+      G.waveSnap = { units: cloneRoster(G.units), bench: cloneRoster(G.bench) };
+    }
+    function restoreWaveRoster() {
+      if (!G.waveSnap) return false;
+      G.units = cloneRoster(G.waveSnap.units);
+      G.bench = cloneRoster(G.waveSnap.bench);
+      const reset = u => {
+        applyStats(u);
+        u.hp = u.maxHp;
+        u.rv2 = false; u.rvT = 0; u.bu = false; u.od = false; u.hits = 0;
+        u.rev = false; u.fs = !!u.firstS; u.sh = 0;
+        u.exploded = false; u.ghost = false; u.ghosted = false; u.big = 0;
+        u.rel = 0; u.lastT = null; u.ov = 0; u.ovB = 0; u.cb = 0; u.stun = 0; u.cd = 0;
+      };
+      G.units.forEach(reset);
+      G.bench.forEach(reset);
+      return true;
+    }
     function startWave() {
       if (G.phase !== 'prep') return;
       if (!G.units.length) { battleMsg.textContent = G.bench.length ? '출전 유닛이 없어요. 예비 유닛을 필드로 드래그하세요' : '유닛이 없어요. 슬롯을 돌려 먼저 소환하세요'; return; }
+      snapshotWaveRoster();
       const w = G.wave, st = themeOf(), df = DIFFS[G.diff], inf = G.stage < 0;
       const sc = inf ? 1 + 0.08 * w : 1 + 0.15 * G.stage;
       const hp = (20 + w * 10) * sc * df.hp * (st.hpM || 1), atk = (2 + w * 1.2) * sc * df.atk;
@@ -1568,7 +1682,7 @@
       G.units.forEach(u => { const I = u.iL || {}; if (I.clone) spawnClone(u); if (I.colossus) spawnColossus(u); });
       const maj = Math.max(0, ...G.units.map(u => (u.iL && u.iL.majesty) || 0));
       if (maj) G.enemies.forEach(e => { e.atk *= 1 - lerp(maj, 0.12, 0.42); const k = 1 - lerp(maj, 0.15, 0.45); e.maxHp *= k; e.hp *= k; }); // 위엄
-      G.phase = 'fight'; sel = -1;
+      G.phase = 'fight'; sel = -1; closePanel();
       startBtn.disabled = true;
       const tag = boss ? `⚠ ${bname}` : pre ? '보스 전초전' : w % 5 === 4 ? '강화 적 출현' : '';
       battleMsg.textContent = `${st.ic} ${st.n} · Wave ${w} ${tag}`.trim() + (w === 1 ? ` · ${st.rule}` : '');
@@ -1627,10 +1741,16 @@
       const c = u.iL.colossus; spawnMinion(Object.assign({ kind: 'colossus', owner: u, icon: '🗿', name: '거신', maxHp: Math.round(u.maxHp * lerp(c, 2, 4)), atk: u.atk * lerp(c, 0.4, 0.9), spd: 1.4 }, nearOwner(u)));
       if (c >= 5) liveE().forEach(e => { e.stun = Math.max(e.stun || 0, 0.8); e.kb = 70; e.kbT = 0.8; }); // LV5: 소환 시 적을 밀쳐내고 기절
     }
-    // 기지 피격: 초보자 방패 / 재도전 보급 / 역전 레버
+    // 하트 보호막 피격. 보호막 0 → 생명(하트) -1
+    // 전원 전멸 상태면 보호막이 더 빨리 깎여, 하트 손실로 빠르게 이어짐
     function baseHit(d) {
-      if (has('noviceShield') && !G.nsUsed && G.wave <= 4) { G.nsUsed = true; battleMsg.textContent = '🛡️ 초보자 방패가 기지 피해를 막았어요'; return; }
-      G.baseHp -= d;
+      if (has('noviceShield') && !G.nsUsed && G.wave <= 4) { G.nsUsed = true; battleMsg.textContent = '🛡️ 초보자 방패가 하트 보호막을 지켰어요'; return; }
+      const wiped = !G.units.some(u => u.hp > 0);
+      const dmg = wiped ? d * 2.5 : d;
+      G.baseHp -= dmg;
+      if (wiped && G.baseHp > 0) {
+        battleMsg.textContent = `⚠️ 전원 전멸! 보호막이 빠르게 깎입니다 🛡️${Math.max(0, Math.ceil(G.baseHp))}`;
+      }
       if (!G.lostThisWave) {
         G.lostThisWave = true;
         if (has('retry1')) { G.gold += has('retry2') ? 150 : 100; battleMsg.textContent = `🔁 재도전 보급 +${has('retry2') ? 150 : 100} 골드`; }
@@ -1750,7 +1870,7 @@
 
       updateHud();
       if (now - lastFieldRender >= 100) { renderField(); lastFieldRender = now; }
-      if (G.baseHp <= 0) endGame();
+      if (G.baseHp <= 0) loseLife();
       else if (!G.enemies.length) clearWave();
     }
 
@@ -1775,21 +1895,36 @@
       renderBoard(); updateHud(); renderField();
     }
 
+    // 하트 보호막 파괴 → 생명 -1, 같은 웨이브 재도전 (웨이브 시작 멤버 전부 복원)
+    function loseLife() {
+      if ((G.lives || 1) <= 1) { G.lives = 0; endGame(); return; }
+      clearInterval(timer);
+      G.lives -= 1;
+      G.enemies = []; G.minions = G.minions.filter(m => m.persist);
+      G.baseHp = baseMax();
+      const restored = restoreWaveRoster();
+      if (!restored) G.units.forEach(u => { u.hp = u.maxHp; });
+      G.phase = 'prep'; startBtn.disabled = false;
+      battleMsg.textContent = restored
+        ? `💔 생명 -1 (남은 ❤️${G.lives}) · Wave ${G.wave} 멤버 복원 · 다시 준비하세요`
+        : `💔 생명 -1 (남은 ❤️${G.lives}) · Wave ${G.wave}를 다시 준비하세요`;
+      renderBoard(); updateHud(); renderField();
+    }
     function endGame() {
       clearInterval(timer);
       G.phase = 'over';
       startBtn.disabled = false;
       startBtn.textContent = '다시 시작';
       $('rsTitle').textContent = 'GAME OVER'; $('rsNext').style.display = 'none'; $('rsBtn').textContent = '다시 시작';
-      $('rsText').innerHTML = `${G.stage >= 0 ? STAGES[G.stage].n + ' (' + DIFFS[G.diff].n + ') · ' : '♾️ 무한 모드 · '}Wave ${G.wave} 도달<br>이번 판 💎 ${G.runRuby} 획득 (보유 ${META.ruby})<br>🔮 업그레이드 트리에서 기원석(💎)을 써서 영구 강화를 해금하세요`;
+      $('rsText').innerHTML = `${G.stage >= 0 ? STAGES[G.stage].n + ' (' + DIFFS[G.diff].n + ') · ' : '♾️ 무한 모드 · '}Wave ${G.wave} 도달<br>생명(❤️)을 모두 잃었습니다<br>이번 판 💎 ${G.runRuby} 획득 (보유 ${META.ruby})<br>🔮 업그레이드 트리에서 기원석(💎)을 써서 영구 강화를 해금하세요`;
       updateRsUpg();
       $('resultScreen').classList.add('show');
-      battleMsg.textContent = `GAME OVER · Wave ${G.wave}에서 기지가 무너졌어요`;
+      battleMsg.textContent = `GAME OVER · Wave ${G.wave}에서 생명을 모두 잃었어요`;
     }
 
     function resetGame() {
       clearInterval(timer);
-      Object.assign(G, { gold: 900 + 50 * hasN('initSupply') + 50 * hasN('supplyWh'), spins: 7, wave: 1, baseHp: baseMax(), nsUsed: false, cbUsed: false, cbSpin: false, lostThisWave: false, regUsed: false, nudgeDisc: false, coreRerolls: hasN('coreReroll') + hasN('coreReroll2'), phase: 'prep', spinning: false, units: [], bench: [], enemies: [], minions: [], runRuby: 0, cores: [], spinCount: 0, draftIdx: 0, waveSpin: 0, freeNext: false, halfNext: false, gtWave: 0, nlWave: 0, blUsed: false, bloodFam: null, lastSym: null, coreRR: 0, essence: 5 + 2 * hasN('emEss'), stock: [], rerolls: 0, items: {} }); newStock();
+      Object.assign(G, { cf: {}, lives: 3, gold: 900 + 50 * hasN('initSupply') + 50 * hasN('supplyWh'), spins: 7, wave: 1, baseHp: baseMax(), nsUsed: false, cbUsed: false, cbSpin: false, lostThisWave: false, regUsed: false, nudgeDisc: false, coreRerolls: hasN('coreReroll') + hasN('coreReroll2'), phase: 'prep', spinning: false, units: [], bench: [], enemies: [], minions: [], runRuby: 0, cores: [], spinCount: 0, draftIdx: 0, waveSpin: 0, freeNext: false, halfNext: false, gtWave: 0, nlWave: 0, blUsed: false, bloodFam: null, lastSym: null, coreRR: 0, essence: 5 + 2 * hasN('emEss'), stock: [], rerolls: 0, items: {} }); newStock();
       $('resultScreen').classList.remove('show');
       G.grid = Array.from({ length: 9 }, () => weightedRandom()); G.nudge = false; sel = -1;
       cells.forEach(c => c.classList.remove('matched'));
@@ -1988,6 +2123,8 @@
     });
     function openDetail() {
       $('detailMsg').textContent = '';
+      const hdr = document.querySelector('#detailPanel .panel-header span');
+      if (hdr) hdr.textContent = 'UNIT DETAIL';
       renderDetail();
       $('detailPanel').classList.add('open');
       overlay.classList.add('show');
@@ -2004,7 +2141,7 @@
 
     // ========== Core / 로비 / 도감 / 연출 ==========
     const CORE_MAX = 8, CORE_DRAFT = [5, 15, 25, 40, 55, 70];
-    const RAR = { c: '일반', u: '고급', r: '희귀' };
+    const RAR = { c: '일반', u: '고급', r: '희귀', l: '전설' };
     const CORES = [ // rar: c 일반 / u 고급(Uncommon) / r 희귀. 앞 4개는 우리 게임 자체 코어
       { id: 'lucky', n: '🍀 행운', d: '⭐ Special 등장 확률 ×2', rar: 'c' },
       { id: 'rich',  n: '💰 풍요', d: '웨이브 클리어 골드 +50%', rar: 'c' },
@@ -2016,40 +2153,161 @@
       { id: 'nutrientLeaf', n: '🍃 양분 잎', d: '흡수한 뒤 다음 스핀 비용이 절반 (웨이브당 1회)', rar: 'u' },
       { id: 'bloodlineSeal', n: '🧬 혈통의 인장', d: '첫 흡수 뒤 다음 스핀에 제물 계열 심볼 3개가 한 줄로 나옵니다', rar: 'u' },
       { id: 'blackNote', n: '🎼 검은 악보', d: '웨이브의 첫 스핀에 ⭐ Special(광대) 심볼이 반드시 하나 나옵니다', rar: 'u', unlock: 'blackNote' },
+      // ---- Slotbound 참고 코어 (tag = 태그 가중치용) ----
+      { id: 'tornNote', n: '📜 찢어진 악보', d: '매 6번째 스핀에 ⭐ Special 심볼 1개 확정', rar: 'u', tag: '조커' },
+      { id: 'jokerSeed', n: '🌱 광대의 씨앗', d: '스핀할 때 각 칸이 1.5% 확률로 ⭐ Special', rar: 'u', tag: '조커' },
+      { id: 'rewindClock', n: '⏪ 되감기 시계', d: '스핀 실패 후 다음 스핀 비용 -25', rar: 'u', tag: '경제' },
+      { id: 'twinCherries', n: '🍒 쌍둥이 체리', d: '웨이브 첫 스핀이 실패하면 마지막 릴이 첫 릴 배치를 복사', rar: 'u', tag: '복구' },
+      { id: 'copycap', n: '🧢 복사 모자', d: '실패 후 한 릴의 맨 위와 맨 아래가 같으면 가운데를 그 심볼로 변경', rar: 'u', tag: '복구' },
+      { id: 'reverseAxis', n: '🔃 역방향 축', d: '맨 아랫줄 칸을 탭하면 릴을 위로 넛지', rar: 'u', tag: '넛지' },
+      { id: 'cycleBell', n: '🔔 순환 종', d: '넛지 때 새 심볼 대신 밀려난 심볼이 반대쪽 끝으로 순환', rar: 'u', tag: '넛지' },
+      { id: 'reboundAxis', n: '↩️ 반동 축', d: '넛지 뒤 방금 넛지한 같은 릴을 1회 더 넛지 가능', rar: 'r', tag: '넛지' },
+      { id: 'resonantAnvil', n: '⚒️ 공명 모루', d: '당첨된 심볼이 보드에 4개 이상이면 유닛 1기 추가 소환', rar: 'r', tag: '소환' },
+      { id: 'echoMirror', n: '🪞 에코 거울', d: '스핀 실패 때 같은 심볼이 4개 이상이면 에센스 +1', rar: 'c', tag: '경제' },
+      { id: 'twistedBell', n: '🛎️ 뒤틀린 종', d: '웨이브 첫 스핀이 실패하면 그 스핀을 1회 무료로 다시', rar: 'c', tag: '복구' },
+      { id: 'goldenLever', n: '🎚️ 황금 레버', d: '매 5번째 스핀의 당첨 유닛 등급이 1단계 상승', rar: 'l', tag: '소환' },
+      { id: 'goldenCrest', n: '👑 황금 문장', d: '넛지로 새 당첨 라인이 생기면 넛지 횟수를 소모하지 않음', rar: 'l', tag: '넛지' },
     ];
     const hasCore = id => (G.cores || []).includes(id);
     const spinCost = () => {
       if (G.freeNext) return 0;
       let c = hasCore('cheap') ? 70 : SPIN_COST;
       if (G.halfNext) c = Math.floor(c / 2);
-      c -= (has('spareSpin') && G.spins === 1 ? 50 : 0) + (G.nudgeDisc ? 50 : 0);
+      c -= (has('spareSpin') && G.spins === 1 ? 50 : 0) + (G.nudgeDisc ? 50 : 0) + (G.rewind ? 25 : 0);
       return Math.max(0, c);
     };
-    let coreChoices = [];
+    let coreChoices = [], coreSeen = [];
     function rollCoreChoices() {
       const idx = Math.max(0, G.draftIdx - 1), uShare = [0.18, 0.21, 0.24, 0.28, 0.31, 0.33, 0.34, 0.35][Math.min(idx, 7)], rShare = 0.08 + 0.02 * idx;
-      const avail = CORES.filter(c => !hasCore(c.id) && (!c.unlock || has(c.unlock))), out = [];
+      const avail = CORES.filter(c => !hasCore(c.id) && !coreSeen.includes(c) && (!c.unlock || has(c.unlock))), out = [];
       const guarantee = (idx === 0 && has('radiantFirst')) || (idx === 1 && has('lingering'));
       for (let k = 0; k < 3; k++) {
         const pool = avail.filter(c => !out.includes(c)); if (!pool.length) break;
-        let rar = Math.random() < rShare ? 'r' : Math.random() < uShare / (1 - rShare) ? 'u' : 'c';
+        let rar = idx >= 3 && Math.random() < 0.05 ? 'l' : Math.random() < rShare ? 'r' : Math.random() < uShare / (1 - rShare) ? 'u' : 'c';
         if (guarantee && k === 0 && pool.some(c => c.rar !== 'c')) rar = pool.some(c => c.rar === 'u') && (Math.random() < 0.6 || !pool.some(c => c.rar === 'r')) ? 'u' : 'r';
         const sub = pool.filter(c => c.rar === rar), src = sub.length ? sub : pool;
-        out.push(src[Math.floor(Math.random() * src.length)]);
+        const own = new Set(G.cores.map(id => (CORES.find(x => x.id === id) || {}).tag)), wt = c => c.tag && own.has(c.tag) ? (c.rar === 'l' ? 1.1 : 1.4) : 1; // 태그 가중치 (전설은 약하게)
+        let rr = Math.random() * src.reduce((a, c) => a + wt(c), 0); out.push(src.find(c => (rr -= wt(c)) <= 0) || src[0]);
       }
       coreChoices = out;
     }
     const nextDraftAt = () => G.draftIdx >= CORE_DRAFT.length ? null : CORE_DRAFT[G.draftIdx] - (G.draftIdx === 0 && has('earlyPick') ? 1 : 0);
-    function renderCoreBar() {
-      const el = $('coreBar'); if (!el) return;
-      const nx = nextDraftAt(), left = nx == null ? null : Math.max(0, nx - (G.spinCount || 0));
-      const cs = G.cores || []; el.innerHTML = `🧿 코어 ${cs.length}/${CORE_MAX} ${cs.map(id => CORES.find(c => c.id === id).n.split(' ')[0]).join(' ')}` + (left == null ? ' · 코어 선택 완료' : cs.length >= CORE_MAX ? '' : ` · 다음 코어까지 ${left}스핀`);
+    // 코어 발동 기록 → 슬롯 패널 코어 칸에 표시
+    function coreFire(id) { const f = G.cf || (G.cf = {}), o = f[id]; f[id] = { w: G.wave, n: o ? o.n + 1 : 1 }; }
+    function coreState(c) {
+      const f = G.cf || {}, x = f[c.id];
+      if (['lucky', 'cheap', 'rich'].includes(c.id)) return { label: '상시', on: false, al: true };
+      if (c.id === 'elite') return { label: '획득', on: false, al: true };
+      if (x && x.w === G.wave) return { label: '발동 ×' + x.n, on: true, al: false };
+      return { label: x ? '대기 ×' + x.n : '대기', on: false, al: false };
     }
+    function openInvDetail(kind, id) {
+      const body = $('detailBody'), msg = $('detailMsg');
+      if (!body) return;
+      msg.textContent = '';
+      if (kind === 'item') {
+        const p = PASSIVES.find(x => x.id === id);
+        if (!p) return;
+        const lv = iLv(id);
+        body.innerHTML =
+          `<div class="dcard"><div class="big">${p.icon}</div><div style="flex:1;min-width:0">` +
+          `<div class="nm">${p.name} <small>패시브 아이템</small></div>` +
+          `<div class="stars">Lv ${lv}/3</div>` +
+          `<div class="st"><span>장착 칸을 차지하는 상시 효과</span></div>` +
+          `</div></div>` +
+          `<div class="shop-row"><div class="info">현재 효과<small>${p.d(lv)}</small></div></div>` +
+          (lv < 3 ? `<div class="shop-row"><div class="info">다음 레벨<small>${p.d(lv + 1)}</small></div></div>` : `<div class="shop-row"><div class="info">최대 레벨<small>더 이상 강화할 수 없어요</small></div></div>`) +
+          `<div class="shop-row"><div class="info">획득<small>상점에서 정수(🔷)로 구매 · 장착 칸 ${equippedCount()}/${itemCap()}</small></div></div>`;
+      } else if (kind === 'core') {
+        const c = CORES.find(x => x.id === id);
+        if (!c) return;
+        const st = coreState(c);
+        body.innerHTML =
+          `<div class="dcard"><div class="big">${(c.n || '').split(' ')[0] || '🧿'}</div><div style="flex:1;min-width:0">` +
+          `<div class="nm">${c.n} <small>코어 · ${RAR[c.rar] || ''}</small></div>` +
+          `<div class="stars">${st.on ? '✓ 이번 웨이브 발동' : st.al ? '상시 효과' : '대기 중'}</div>` +
+          `</div></div>` +
+          `<div class="shop-row"><div class="info">효과<small>${c.d}</small></div></div>` +
+          `<div class="shop-row"><div class="info">상태<small>${st.label} · 슬롯을 돌릴 때 발동하는 규칙입니다</small></div></div>` +
+          `<div class="shop-row"><div class="info">코어 슬롯<small>${(G.cores || []).length}/${CORE_MAX} · 스핀 누적으로 선택</small></div></div>`;
+      } else if (kind === 'item-empty') {
+        body.innerHTML =
+          `<div class="dcard"><div class="big">🎒</div><div style="flex:1;min-width:0">` +
+          `<div class="nm">빈 아이템 칸</div>` +
+          `<div class="stars">장착 ${equippedCount()}/${itemCap()}</div>` +
+          `</div></div>` +
+          `<div class="shop-row"><div class="info">안내<small>상점에서 패시브 아이템을 사면 이 칸에 장착됩니다. 전투 중 상시 효과가 적용돼요.</small></div></div>`;
+      } else if (kind === 'core-empty') {
+        const nx = nextDraftAt(), left = nx == null ? null : Math.max(0, nx - (G.spinCount || 0));
+        body.innerHTML =
+          `<div class="dcard"><div class="big">🧿</div><div style="flex:1;min-width:0">` +
+          `<div class="nm">빈 코어 칸</div>` +
+          `<div class="stars">코어 ${(G.cores || []).length}/${CORE_MAX}</div>` +
+          `</div></div>` +
+          `<div class="shop-row"><div class="info">안내<small>스핀을 쌓으면 코어를 고를 수 있습니다.${left == null ? ' 이번 판 코어 선택은 끝났습니다.' : ' 다음 선택까지 ' + left + '스핀.'}</small></div></div>`;
+      } else return;
+      const hdr = document.querySelector('#detailPanel .panel-header span');
+      if (hdr) hdr.textContent = kind.startsWith('core') ? 'CORE DETAIL' : 'ITEM DETAIL';
+      $('detailPanel').classList.add('open');
+      overlay.classList.add('show');
+      mainArea.classList.add('dimmed');
+    }
+    function renderStatus() {
+      try {
+        const f = G.cf || {};
+        const cs = (G.cores || []).map(id => CORES.find(c => c.id === id)).filter(Boolean);
+        const nx = nextDraftAt(), left = nx == null ? null : Math.max(0, nx - (G.spinCount || 0));
+        const progress = left == null ? '선택 완료' : (cs.length >= CORE_MAX ? '가득 참' : `다음까지 ${left}스핀`);
+        // 슬롯 패널: 코어 칸 (CORE_MAX개)
+        let coreSlots = '';
+        for (let i = 0; i < CORE_MAX; i++) {
+          const c = cs[i];
+          if (c) {
+            const st = coreState(c);
+            const icon = (c.n || '🧿').split(' ')[0];
+            coreSlots += `<button type="button" class="inv-slot filled core${st.on ? ' on' : ''}" data-inv="core" data-id="${c.id}" title="${c.n}"><span>${icon}</span><span class="ist">${st.label}</span></button>`;
+          } else {
+            coreSlots += `<button type="button" class="inv-slot empty" data-inv="core-empty" title="빈 코어 칸"></button>`;
+          }
+        }
+        const coreHtml = `<div class="inv-row"><div class="inv-label"><b>🧿 코어 ${cs.length}/${CORE_MAX}</b><span>${progress}</span></div><div class="inv-grid cores">${coreSlots}</div></div>`;
+        // 전투 화면: 아이템 칸 (itemCap개, 기본 6)
+        const cap = itemCap();
+        const equipped = PASSIVES.filter(pp => iLv(pp.id) > 0);
+        let itemSlots = '';
+        for (let i = 0; i < cap; i++) {
+          const p = equipped[i];
+          if (p) {
+            const lv = iLv(p.id);
+            itemSlots += `<button type="button" class="inv-slot filled" data-inv="item" data-id="${p.id}" title="${p.name} Lv${lv}"><span>${p.icon}</span><span class="ilv">Lv${lv}</span></button>`;
+          } else {
+            itemSlots += `<button type="button" class="inv-slot empty" data-inv="item-empty" title="빈 아이템 칸"></button>`;
+          }
+        }
+        const gridCls = cap >= 8 ? 'inv-grid items-8' : cap >= 7 ? 'inv-grid items-7' : 'inv-grid';
+        const itemHtml = `<div class="inv-row"><div class="inv-label"><b>🎒 아이템 ${equipped.length}/${cap}</b><span>탭하여 설명</span></div><div class="${gridCls}">${itemSlots}</div></div>`;
+        const elCore = $('coreStatus');
+        if (elCore && elCore._h !== coreHtml) { elCore._h = coreHtml; elCore.innerHTML = coreHtml; }
+        const elItem = $('coreStatus2');
+        if (elItem && elItem._h !== itemHtml) { elItem._h = itemHtml; elItem.innerHTML = itemHtml; }
+      } catch (e) {}
+    }
+    function renderCoreBar() {}
+    // 아이템/코어 칸 클릭 → 상세 팝업
+    document.addEventListener('click', e => {
+      const slot = e.target.closest('.inv-slot');
+      if (!slot || !slot.dataset.inv) return;
+      const kind = slot.dataset.inv, id = slot.dataset.id;
+      if (kind === 'item' && id) openInvDetail('item', id);
+      else if (kind === 'core' && id) openInvDetail('core', id);
+      else if (kind === 'item-empty') openInvDetail('item-empty');
+      else if (kind === 'core-empty') openInvDetail('core-empty');
+    });
     function checkDraft() { // 스핀 누적 5/15/25/40/55/70회에 코어 3택1
       const nx = nextDraftAt(); if (nx == null || G.spinCount < nx) return;
       G.draftIdx += 1;
       if (G.cores.length >= CORE_MAX) return;
-      G.coreRR = 0; showCore(true);
+      G.coreRR = 0; coreSeen = []; showCore(true);
     }
     function showCore(fresh) {
       if (fresh !== false || !coreChoices.length) rollCoreChoices();
@@ -2065,7 +2323,7 @@
       if (!b || b.disabled) return;
       if (b.dataset.corereroll) {
         if (G.coreRerolls > 0) G.coreRerolls--; else { const rc = 3 + G.coreRR; if (G.essence < rc) return; G.essence -= rc; G.coreRR++; }
-        showCore(true); updateHud(); return;
+        coreSeen = coreChoices.slice(); showCore(true); updateHud(); return;
       }
       const c = CORES.find(x => x.id === b.dataset.core); if (!c) return;
       G.cores.push(c.id);
@@ -2144,15 +2402,15 @@
       ['questReroll','R','퀘스트 리롤',60,'런마다 돌 퀘스트 1개를 리롤합니다.',['fateUnlock'],[3,1],null,1],
       ['stoneStand','R','돌 진열대',60,'런 시작 전 기계 선택 화면에서 운명의 돌 1개를 구매합니다.',['fateUnlock'],[4,0],['research',16],1],
       ['stoneStand1','R','돌 진열대 +1',150,'돌 진열대에 등급 무관 돌 1개 추가.',['stoneStand'],[4,1],['research',23],1],
-      ['life1','S','추가 목숨 I',1,'기지 최대 체력 +20.',['sigil'],null,null,0],
+      ['life1','S','추가 목숨 I',1,'하트 보호막 최대 +15.',['sigil'],null,null,0],
       ['initSupply','S','초기 보급',2,'시작 골드 +50.',['life1'],null,null,0],
-      ['noviceShield','S','초보자 방패',4,'1~4웨이브 중 기지 피해를 처음 한 번 막아 줍니다.',['life1'],null,null,0],
+      ['noviceShield','S','초보자 방패',4,'1~4웨이브 중 보호막 피해를 처음 한 번 막아 줍니다.',['life1'],null,null,0],
       ['supplyWh','S','보급 창고',7,'시작 골드 +50.',['initSupply'],null,null,0],
       ['retry1','S','재도전 보급',9,'기지가 피해를 입는 웨이브마다 첫 피격 시 골드 +100.',['initSupply'],null,null,0],
-      ['comeback','S','역전 레버',20,'기지가 처음 피해를 입은 뒤 다음 스핀이 반드시 당첨됩니다. 런당 1회.',['noviceShield'],null,null,0],
+      ['comeback','S','역전 레버',20,'보호막이 처음 피해를 입은 뒤 다음 스핀이 반드시 당첨됩니다. 런당 1회.',['noviceShield'],null,null,0],
       ['expedition','S','원정 보급',12,'매 런을 원정 코어 "용병 계약"으로 시작합니다.',['initSupply'],null,null,1],
-      ['gateRec','S','관문 회복',48,'5의 배수(심판·보스) 웨이브를 클리어하면 기지 체력 +20 회복.',['comeback'],null,null,0],
-      ['life2','S','추가 목숨 II',22,'기지 최대 체력 +20.',['retry1'],null,null,0],
+      ['gateRec','S','관문 회복',48,'5의 배수(심판·보스) 웨이브를 클리어하면 하트 보호막 +20 회복.',['comeback'],null,null,0],
+      ['life2','S','추가 목숨 II',22,'하트 보호막 최대 +15.',['retry1'],null,null,0],
       ['contractExt','S','계약 연장',18,'용병 계약을 한 번 더 사용할 수 있습니다.',['expedition'],[0,1],null,1],
       ['emEss','S','비상 정수',30,'런 시작 시 정수 +2.',['life1'],[1,1],['supply',14],0],
       ['victory','S','승리 보너스',45,'웨이브를 이길 때마다 골드 +5.',['interest'],[1,1],null,0],
@@ -2253,15 +2511,16 @@
       if (n.grp) { const mem = GROUPS[n.grp[0]].filter(x => x !== n.id), goal = n.grp[1] >= mem.length ? mem.length : n.grp[1], got = mem.filter(has).length; if (got < goal) return `${GROUP_NAME[n.grp[0]]} 업그레이드 ${got}/${goal} 필요`; }
       return null;
     }
-    const baseMax = () => 100 + 20 * (hasN('life1') + hasN('life2'));
-    const rerollCost = () => Math.max(1, rerollCost() - hasN('reroll'));
+    // 하트 보호막 최대치 (짧을수록 전멸 시 하트 손실이 빨라짐)
+    const baseMax = () => 50 + 15 * (hasN('life1') + hasN('life2'));
+    const rerollCost = () => Math.max(1, 1 + (G.rerolls || 0) - hasN('reroll')); // 기본 1, 같은 웨이브 안에서 리롤할 때마다 +1
     const itemCost = b => Math.max(1, b - (has('regulars') && !G.regUsed ? 1 : 0));
     // 아이템: 구매 즉시 사용. use()가 false면 사용 불가(루비 차감 없음)
     const ITEMS = [
       { id: 'spin',   icon: '🎰', name: '스핀 팩',    desc: '스핀 +5회',          cost: 6, use: () => { G.spins += 5; return true; } },
       { id: 'gold',   icon: '💰', name: '골드 주머니', desc: '골드 +500',          cost: 8, use: () => { G.gold += 500; return true; } },
-      { id: 'repair', icon: '🏰', name: '기지 수리',   desc: '기지 HP +50 (최대 100)', cost: 6, fail: '기지 HP가 이미 가득해요',
-        use: () => { if (G.baseHp >= baseMax()) return false; G.baseHp = Math.min(baseMax(), G.baseHp + 50); return true; } },
+      { id: 'repair', icon: '🛡️', name: '보호막 충전', desc: '하트 보호막 +30', cost: 6, fail: '보호막이 이미 가득해요',
+        use: () => { if (G.baseHp >= baseMax()) return false; G.baseHp = Math.min(baseMax(), G.baseHp + 30); return true; } },
       { id: 'summon', icon: '🎫', name: '소환권',      desc: '랜덤 유닛 1기 즉시 소환', cost: 10, fail: '보드가 가득 찼어요',
         use: () => { if (G.units.length >= maxUnits() && G.bench.length >= BENCH_MAX) return false; summonUnit(weightedRandom(true)); return true; } },
       { id: 'advs',   icon: '✨', name: '승급 소환권', desc: 'Advanced 유닛 1기 즉시 소환', cost: 18, fail: '보드가 가득 찼어요',
