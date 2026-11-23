@@ -2657,10 +2657,10 @@
     })();
 
     // ========== 배경음악 (index.html 옆 music 폴더의 mp3를 불러옴) ==========
-    // 평소: Morning at Willow Creek / 보스 웨이브: Crown of the Obsidian Gate. 옵션의 배경음악 켜기·볼륨을 따르고, 곡이 바뀔 때 부드럽게 교차합니다.
+    // 평소: Morning at Willow Creek / 보스 웨이브: Crown of the Obsidian Gate / 아군 전멸·게임 오버: The Fallen Crest. 옵션의 배경음악 켜기·볼륨을 따르고, 곡이 바뀔 때 부드럽게 교차합니다.
     // music 폴더가 없으면 조용히 음악 없이 진행합니다. 모바일 규칙상 첫 터치 때 재생을 시작합니다.
     const BGM = (() => {
-      const SRC = { field: 'music/Morning_at_Willow_Creek.mp3', boss: 'music/Crown_of_the_Obsidian_Gate.mp3' };
+      const SRC = { field: 'music/Morning_at_Willow_Creek.mp3', boss: 'music/Crown_of_the_Obsidian_Gate.mp3', fall: 'music/The_Fallen_Crest.mp3' };
       const A = {}; let cur = null, want = 'field', unlocked = false, fadeT = 0;
       const level = () => { try { return SET.bgm ? Math.pow(SET.bgmVol / 100, 1.5) * 0.7 : 0; } catch (e) { return 0; } };
       function el(k) { if (!A[k]) { const a = new Audio(); a.src = SRC[k]; a.loop = true; a.preload = 'auto'; a.volume = 0; a.addEventListener('error', () => { a.bad = true; }); A[k] = a; } return A[k]; }
@@ -2681,10 +2681,10 @@
         if (level() > 0) { const a = el(cur); if (!a.bad && a.paused) { const p = a.play(); if (p && p.catch) p.catch(() => {}); } }
         if (!fadeT) fadeT = setInterval(tick, 50);
       }
-      function set(k) { if (want === k) return; want = k; if (k === 'boss') { try { el('boss').currentTime = 0; } catch (e) {} } apply(); }
+      function set(k) { if (want === k) return; want = k; if (k === 'boss' || k === 'fall') { try { el(k).currentTime = 0; } catch (e) {} } apply(); }
       function unlock() {
         if (unlocked) return; unlocked = true;
-        const b = el('boss'); b.muted = true; const p = b.play(); if (p && p.then) p.then(() => { b.pause(); b.muted = false; }).catch(() => { b.muted = false; }); else { b.pause(); b.muted = false; } // 보스 곡도 터치 순간에 미리 재생 허락을 받아 둠
+        ['boss', 'fall'].forEach(k => { const b = el(k); b.muted = true; const p = b.play(); if (p && p.then) p.then(() => { b.pause(); b.muted = false; }).catch(() => { b.muted = false; }); else { b.pause(); b.muted = false; } }); // 보스 곡도 터치 순간에 미리 재생 허락을 받아 둠
         el('field'); apply();
       }
       ['pointerdown', 'touchstart', 'keydown'].forEach(ev => window.addEventListener(ev, unlock, { capture: true, passive: true }));
@@ -3067,7 +3067,7 @@
         G.bench.push(nu);
         battleMsg.textContent = `⚠ 출전 한도 ${maxUnits()}마리 초과! ${nu.icon} ${nu.name}이 후방 대기 중입니다. 필드에서 유닛 위로 드래그해 흡수하세요.`;
       }
-      applyStats(nu); dexAdd('u', nu.name); SFX.summon(tier);
+      applyStats(nu); dexAdd('u', nu.name); SFX.summon(tier); if (G.phase === 'prep' && BGM.track === 'fall') BGM.set('field'); // 새 유닛이 생기면 전멸 음악 종료
       if (up) battleMsg.textContent = `${TNAME[tier]} ${nu.icon} ${nu.name} 소환!`;
       renderBoard();
       nu.isNew = false;
@@ -4254,7 +4254,7 @@
       G.minions = G.minions.filter(m => m.hp > 0);
       const before = G.units.length;
       G.units.forEach(u => { if (u.hp <= 0 && !G.fallen.includes(u)) G.fallen.push(u); }); // 쓰러진 유닛은 웨이브 승리 후 부활
-      G.units = G.units.filter(u => u.hp > 0);
+      G.units = G.units.filter(u => u.hp > 0); if (!G.units.length && G.phase === 'fight') BGM.set('fall'); // 아군 전멸 → 전멸 음악
       if (G.units.length !== before) renderBoard();
 
       updateHud();
@@ -4306,7 +4306,7 @@
     function loseLife() {
       if ((G.lives || 1) <= 1) { G.lives = 0; endGame(); return; }
       clearInterval(timer);
-      G.lives -= 1; G.waveSpin = 0; SFX.lifeLost(); BGM.set('field');
+      G.lives -= 1; G.waveSpin = 0; SFX.lifeLost();
       G.enemies = []; G.minions = G.minions.filter(m => m.persist);
       G.baseHp = baseMax();
       const restored = restoreWaveRoster(); G.fallen = [];
@@ -4332,8 +4332,8 @@
       ].join('');
       $('regroup').classList.add('show');
     }
-    $('rgOk').addEventListener('click', () => $('regroup').classList.remove('show'));
-    function endGame() { SFX.gameOver(); BGM.set('field');
+    $('rgOk').addEventListener('click', () => { $('regroup').classList.remove('show'); if (G.phase === 'prep') BGM.set('field'); }); // 재정비 확인 → 원래 곡
+    function endGame() { SFX.gameOver(); BGM.set('fall');
       clearInterval(timer);
       G.phase = 'over';
       startBtn.disabled = false; startBtn.hidden = false;
@@ -4345,7 +4345,7 @@
       battleMsg.textContent = `GAME OVER · Wave ${G.wave}에서 생명을 모두 잃었어요`;
     }
 
-    function resetGame() {
+    function resetGame() { BGM.set('field');
       clearInterval(timer);
       if (ciEnd) ciEnd(); Object.assign(G, { ciPause: false, ciLast: -1e9, cf: {}, wu: {}, cloverWave: 0, cloverCell: null, kegWave: 0, kegCell: null, jcCol: null, sporeSym: null, manualStop: null, chPot: 0, gpWave: 0, gpGot: 0, mlWave: 0, wcWave: 0, hmWave: 0, cartWave: 0, winStreak: 0, waveWins: 0, lastWinSpin: -1, retry: null, fallen: [], waveOrder: [], missStreak: 0, pityHit: false, lives: 3, gold: 900 + 50 * hasN('initSupply') + 50 * hasN('supplyWh'), spins: 7, wave: 1, baseHp: baseMax(), nsUsed: false, cbUsed: false, cbSpin: false, lostThisWave: false, regUsed: false, nudgeDisc: false, coreRerolls: hasN('coreReroll') + hasN('coreReroll2'), phase: 'prep', spinning: false, units: [], bench: [], enemies: [], minions: [], runRuby: 0, cores: [], spinCount: 0, draftIdx: 0, waveSpin: 0, freeNext: false, halfNext: false, gtWave: 0, nlWave: 0, blUsed: false, bloodFam: null, lastSym: null, coreRR: 0, essence: 5 + 2 * hasN('emEss'), stock: [], rerolls: 0, items: {} }); newStock();
       $('resultScreen').classList.remove('show');
