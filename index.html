@@ -2664,31 +2664,32 @@
       const A = {}; let cur = null, want = 'field', unlocked = false, fadeT = 0;
       const level = () => { try { return SET.bgm ? Math.pow(SET.bgmVol / 100, 1.5) * 0.7 : 0; } catch (e) { return 0; } };
       function el(k) { if (!A[k]) { const a = new Audio(); a.src = SRC[k]; a.loop = true; a.preload = 'auto'; a.volume = 0; a.addEventListener('error', () => { a.bad = true; }); A[k] = a; } return A[k]; }
-      function tick() { // 볼륨을 조금씩 옮겨서 곡 교체를 부드럽게 (아이폰처럼 볼륨을 못 바꾸는 기기는 바로 교체)
-        const L = level(); let busy = false;
+      const play = a => { if (a.bad) return; const p = a.play(); if (p && p.catch) p.catch(() => {}); };
+      // 한 번에 한 곡만: 지금 곡이 아닌 것은 짧게 줄인 뒤 반드시 멈추고, 그게 끝난 다음에 새 곡을 켭니다 (겹침 방지 · 0.06초마다 계속 점검)
+      function tick() {
+        if (!unlocked) return;
+        const L = document.hidden ? 0 : level(); let othersOn = false;
         Object.keys(A).forEach(k => {
-          const a = A[k], target = k === cur ? L : 0, v = a.volume, nv = Math.abs(target - v) < 0.03 ? target : v + Math.sign(target - v) * 0.03;
-          a.volume = Math.max(0, Math.min(1, nv));
-          const stuck = Math.abs(a.volume - Math.max(0, Math.min(1, nv))) > 0.001;
-          if (target === 0 && (nv === 0 || stuck)) { if (!a.paused) a.pause(); return; }
-          if (!stuck && nv !== target) busy = true;
+          const a = A[k]; if (k === cur || a.paused) return;
+          const nv = Math.max(0, a.volume - 0.07); a.volume = nv;
+          if (nv <= 0.001 || Math.abs(a.volume - nv) > 0.001) a.pause(); else othersOn = true; // 볼륨을 못 바꾸는 기기(아이폰)는 바로 멈춤
         });
-        if (!busy) { clearInterval(fadeT); fadeT = 0; }
+        const a = cur && A[cur]; if (!a) return;
+        if (L <= 0) { if (!a.paused) a.pause(); return; }
+        if (othersOn) return; // 이전 곡이 완전히 멈춘 뒤에 시작
+        if (a.paused) { a.volume = 0; play(a); }
+        const v = a.volume, nv = v < L ? Math.min(L, v + 0.05) : Math.max(L, v - 0.05); a.volume = nv;
       }
-      function apply() {
-        if (!unlocked || document.hidden) return;
-        cur = want;
-        if (level() > 0) { const a = el(cur); if (!a.bad && a.paused) { const p = a.play(); if (p && p.catch) p.catch(() => {}); } }
-        if (!fadeT) fadeT = setInterval(tick, 50);
-      }
+      function apply() { cur = want; tick(); }
       function set(k) { if (want === k) return; want = k; if (k === 'boss' || k === 'fall') { try { el(k).currentTime = 0; } catch (e) {} } apply(); }
       function unlock() {
         if (unlocked) return; unlocked = true;
         ['boss', 'fall'].forEach(k => { const b = el(k); b.muted = true; const p = b.play(); if (p && p.then) p.then(() => { b.pause(); b.muted = false; }).catch(() => { b.muted = false; }); else { b.pause(); b.muted = false; } }); // 보스 곡도 터치 순간에 미리 재생 허락을 받아 둠
-        el('field'); apply();
+        cur = want; const f = el(cur); if (level() > 0 && f.paused) { f.volume = 0; play(f); } // 첫 터치 안에서 바로 재생 시작
+        fadeT = setInterval(tick, 60);
       }
       ['pointerdown', 'touchstart', 'keydown'].forEach(ev => window.addEventListener(ev, unlock, { capture: true, passive: true }));
-      document.addEventListener('visibilitychange', () => { if (document.hidden) Object.values(A).forEach(a => a.pause()); else apply(); });
+      document.addEventListener('visibilitychange', () => { if (document.hidden) Object.values(A).forEach(a => a.pause()); else tick(); });
       return { set, apply, get track() { return want; }, get audio() { return A; } };
     })();
 
