@@ -737,9 +737,8 @@
     .bf-layer { grid-row: 2; grid-column: 1 / -1; position: relative; pointer-events: none; z-index: 3; }
     .field.fighting .ally-side { border-color: transparent !important; background: transparent !important; }
     .field.fighting .enemy-side { border-left-color: transparent !important; }
-    .bf-actor { position: absolute; transition: left .1s linear, top .1s linear; will-change: left, top; }
+    .bf-actor { position: absolute; }
     .bf-actor .ally-tag, .bf-actor .lv { display: none; }
-    .bf-actor.walk .ico { animation: bfBob .32s ease-in-out infinite; }
     .bf-actor.bf-ally.attack .ico { animation: bfLungeR .26s ease-out; }
     .bf-actor.foe.attack .ico { animation: bfLungeL .26s ease-out; }
     .bf-actor.hit .ico { animation: hitFoe .24s ease-out; }
@@ -769,9 +768,8 @@
     @media (prefers-reduced-motion: reduce) { .bf-actor.walk .ico { animation: none; } }
 
     /* ===== 캐릭터 동작 ===== */
-    .bf-actor .ico, .ally-side .actor:not(.bench-actor) .ico.has-spr { animation: aIdle 1.8s ease-in-out infinite; transform-origin: 50% 100%; }
-    .bf-actor.walk .ico { animation: aWalk .38s ease-in-out infinite; }
-    .bf-actor.walk[data-fam="Cavalry"] .ico { animation: aGallop .3s ease-in-out infinite; }
+    .bf-actor .ico, .ally-side .actor .ico { transform-origin: 50% 100%; }
+    .ico.mo { transition: none !important; will-change: transform; } /* 걷기·대기 자세는 MOTION이 매 프레임 계산 */
     .bf-actor.face-l .ico img.spr { transform: scaleX(-1); }
     .bf-actor.attack[data-atk="slash"] .ico { animation: aSlash .3s ease-out; }
     .bf-actor.attack[data-atk="thrust"] .ico, .bf-actor.attack[data-atk="punch"] .ico { animation: aThrust .26s ease-out; }
@@ -981,11 +979,11 @@
     .lb-title { font-family: 'Black Han Sans', -apple-system, sans-serif; font-size: 25px; letter-spacing: 2px; color: #fde68a; text-shadow: 0 2px 0 #7a4a06, 0 0 14px rgba(251,191,36,.35); white-space: nowrap; }
     #lbText { text-align: center; margin: 9px 0 10px; font-size: 12px; color: #9aa6d0; } #lbText b { color: #fde68a; }
     #lobby .dtab small { display: block; margin-top: 1px; font-size: 10px; font-weight: 600; opacity: .8; }
-    .lb-list { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 9px; padding: 2px 1px 8px; overscroll-behavior: contain; }
-    #lobby .st-card { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; min-height: 78px; padding: 10px 12px 10px 10px; border-radius: 16px; border: 1px solid rgba(255,255,255,.18);
-      text-align: left; color: #fff; font-weight: 400; font-size: 13px; overflow: hidden; cursor: pointer; flex-shrink: 0; box-shadow: 0 4px 0 rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.18); transition: transform .08s; }
-    #lobby .st-card::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 85% 0%, rgba(255,255,255,.18), transparent 55%); pointer-events: none; }
-    #lobby .st-card:not(:disabled):active { transform: scale(.98) translateY(2px); }
+    .lb-list { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 7px; padding: 2px 1px 10px; overscroll-behavior: contain; }
+    /* 스테이지 카드: 평소엔 제목 한 줄로 접혀 있고, 선택하면 커지면서 맵 미리보기가 펼쳐짐 */
+    #lobby .st-card { position: relative; flex-shrink: 0; width: 100%; min-width: 0; border-radius: 16px; border: 1px solid rgba(255,255,255,.16); color: #fff; overflow: hidden;
+      box-shadow: 0 3px 0 rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.16); transition: border-color .3s, box-shadow .3s; }
+    #lobby .st-card::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 85% 0%, rgba(255,255,255,.16), transparent 55%); pointer-events: none; }
     #lobby .st-card.st0 { background: linear-gradient(115deg, #3b7d33, #173a1c 72%); }
     #lobby .st-card.st1 { background: linear-gradient(115deg, #5b3787, #1b1230 72%); }
     #lobby .st-card.st2 { background: linear-gradient(115deg, #a8723f, #3f2716 72%); }
@@ -993,20 +991,55 @@
     #lobby .st-card.st4 { background: linear-gradient(115deg, #a52c12, #2a0806 72%); }
     #lobby .st-card.st5 { background: linear-gradient(115deg, #5a33b8, #120a33 72%); }
     #lobby .st-card.inf { background: linear-gradient(115deg, #b8860b, #3d2a05 72%); }
-    #lobby .st-card.lock { filter: grayscale(.85) brightness(.55); cursor: default; }
-    #lobby .st-card:disabled { opacity: 1; }
-    .st-ic { width: 52px; flex-shrink: 0; text-align: center; font-size: 34px; filter: drop-shadow(0 3px 4px rgba(0,0,0,.5)); }
-    .st-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-    .st-no { font-size: 10px; font-weight: 800; letter-spacing: 2px; color: rgba(255,255,255,.62); }
-    .st-main b { font-family: 'Black Han Sans', -apple-system, sans-serif; font-weight: 400; font-size: 18px; letter-spacing: .5px; text-shadow: 0 2px 2px rgba(0,0,0,.4); }
-    .st-main small { font-size: 11px; color: rgba(255,255,255,.78); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .st-main small.st-bn { color: #fecaca; }
-    .st-side { display: flex; flex-direction: column; align-items: center; gap: 5px; flex-shrink: 0; }
-    .st-boss { font-size: 24px; line-height: 1; filter: drop-shadow(0 2px 3px rgba(0,0,0,.6)); }
-    .st-go { padding: 5px 12px; border-radius: 12px; font-size: 12px; font-weight: 800; color: #2a1700; background: linear-gradient(180deg, #ffe48a, #f5a70b); box-shadow: 0 2px 0 #8a5a06; }
-    #lobby .st-card.done .st-go { color: #1a2250; background: linear-gradient(180deg, #e6ebff, #a2b2ff); box-shadow: 0 2px 0 #4a5799; }
-    .st-lock { font-size: 22px; }
-    .st-clear { position: absolute; top: 9px; left: -28px; transform: rotate(-35deg); padding: 2px 30px; background: #22c55e; color: #fff; font-size: 9px; font-weight: 900; letter-spacing: 1px; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+    #lobby .st-card.lock:not(.sel) .st-head { filter: grayscale(.85) brightness(.6); }
+    #lobby .st-card.sel { border-color: rgba(253,230,138,.8); box-shadow: 0 0 0 2px rgba(253,230,138,.22), 0 10px 24px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.2); animation: stPop .42s ease-out; }
+    #lobby .st-card.sel.lock { border-color: rgba(160,170,200,.55); }
+    @keyframes stPop { 0% { transform: scale(.97); } 55% { transform: scale(1.015); } 100% { transform: none; } }
+    .st-head { position: relative; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 50px; padding: 6px 12px 6px 6px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: min-height .35s, padding .35s; }
+    #lobby .st-card:not(.sel) .st-head:active { transform: scale(.985); }
+    .st-card.sel .st-head { min-height: 62px; padding: 9px 12px 7px 8px; cursor: default; }
+    .st-ic { width: 40px; flex-shrink: 0; text-align: center; font-size: 25px; line-height: 1.15; filter: drop-shadow(0 3px 4px rgba(0,0,0,.5)); transition: font-size .35s, width .35s; }
+    .st-card.sel .st-ic { width: 50px; font-size: 36px; }
+    .st-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+    .st-no { font-size: 9px; font-weight: 800; letter-spacing: 2px; color: rgba(255,255,255,.6); }
+    .st-main b { font-family: 'Black Han Sans', -apple-system, sans-serif; font-weight: 400; font-size: 16px; letter-spacing: .5px; text-shadow: 0 2px 2px rgba(0,0,0,.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: font-size .35s; }
+    .st-card.sel .st-main b { font-size: 21px; }
+    .st-tag { flex-shrink: 0; padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: 900; letter-spacing: .5px; background: rgba(0,0,0,.35); color: #dfe6ff; }
+    .st-tag.ok { background: #16a34a; color: #fff; box-shadow: 0 1px 0 rgba(0,0,0,.35); }
+    .st-chev { flex-shrink: 0; width: 18px; text-align: center; font-size: 11px; opacity: .55; transition: transform .35s, opacity .35s; }
+    .st-card.sel .st-chev { transform: rotate(180deg); opacity: 0; }
+    .st-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .4s cubic-bezier(.2,.8,.2,1); }
+    .st-card.sel .st-body { grid-template-rows: 1fr; }
+    .st-in { min-height: 0; overflow: hidden; }
+    .st-pad { padding: 0 9px 10px; }
+    .st-prev { position: relative; height: 172px; border-radius: 12px; overflow: hidden; background: #0b0f1e; box-shadow: inset 0 0 0 1px rgba(255,255,255,.14), 0 2px 6px rgba(0,0,0,.4); }
+    .st-prev canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    .st-prev::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(0,0,0,.28), transparent 30%, transparent 72%, rgba(0,0,0,.3)); }
+    .st-card.lock .st-prev canvas { filter: grayscale(.75) brightness(.55); }
+    .sp-heroes i { position: absolute; bottom: 8px; width: 46px; height: 52px; background: center bottom / contain no-repeat; transform-origin: 50% 100%; animation: tWalk .44s ease-in-out infinite; filter: drop-shadow(0 2px 2px rgba(0,0,0,.55)); z-index: 1; }
+    .sp-heroes i:nth-child(1) { left: 25%; bottom: 6px; background-image: var(--lbh0); }
+    .sp-heroes i:nth-child(2) { left: 15%; bottom: 16px; height: 46px; background-image: var(--lbh1); animation-delay: -.11s; z-index: 0; }
+    .sp-heroes i:nth-child(3) { left: 6%; bottom: 4px; background-image: var(--lbh2); animation-delay: -.22s; }
+    .sp-heroes i:nth-child(4) { left: 0; bottom: 18px; height: 44px; background-image: var(--lbh3); animation-delay: -.33s; z-index: 0; }
+    .sp-foes span { position: absolute; bottom: calc(10px + var(--j) * 9px); right: calc(31% + var(--j) * 8%); font-size: 21px; line-height: 1; filter: drop-shadow(0 2px 2px rgba(0,0,0,.6)); animation: spHop .5s ease-in-out infinite alternate; animation-delay: calc(var(--j) * -.17s); }
+    .sp-boss { position: absolute; right: 4%; bottom: 4px; height: 92px; display: flex; align-items: flex-end; z-index: 1; }
+    .sp-boss img { height: 100%; width: auto; transform: scaleX(-1); transform-origin: 50% 100%; filter: drop-shadow(0 0 9px rgba(255,70,70,.6)) drop-shadow(0 3px 3px rgba(0,0,0,.6)); animation: spBoss 2.2s ease-in-out infinite; }
+    .sp-boss span { font-size: 52px; line-height: 1; filter: drop-shadow(0 0 9px rgba(255,70,70,.6)); animation: spBoss 2.2s ease-in-out infinite; }
+    @keyframes spHop { from { transform: translateY(0); } to { transform: translateY(-4px); } }
+    @keyframes spBoss { 0%, 100% { scale: 1; } 50% { scale: 1.05; } }
+    .sp-tags { position: absolute; left: 8px; top: 8px; right: 8px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; z-index: 2; pointer-events: none; }
+    .sp-tags span { max-width: 100%; padding: 3px 8px; border-radius: 9px; background: rgba(8,10,24,.66); font-size: 10.5px; line-height: 1.3; color: #e6ebff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sp-tags .sp-bn { color: #fecaca; }
+    .sp-lock { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: rgba(5,7,16,.35); text-align: center; padding: 0 16px; }
+    .sp-lock b { font-size: 30px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
+    .sp-lock span { font-size: 12px; font-weight: 700; color: #dfe6ff; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+    .st-start { display: block; width: 100%; height: 44px; margin-top: 9px; border: 0; border-radius: 13px; font-size: 16px; font-weight: 900; letter-spacing: .5px; color: #2a1700; background: linear-gradient(180deg, #ffe48a, #f5a70b); box-shadow: 0 3px 0 #8a5a06; cursor: pointer; }
+    .st-start:not(:disabled):active { transform: translateY(2px); box-shadow: 0 1px 0 #8a5a06; }
+    .st-card.done .st-start { color: #1a2250; background: linear-gradient(180deg, #e6ebff, #a2b2ff); box-shadow: 0 3px 0 #4a5799; }
+    .st-start:disabled { background: rgba(20,24,44,.75); color: #9aa3c0; box-shadow: inset 0 0 0 1px rgba(255,255,255,.1); font-size: 12px; font-weight: 700; cursor: default; }
+    .st-start i { font-style: normal; margin-right: .35em; }
+    .st-card:not(.sel) .st-prev *, .st-card:not(.sel) .st-prev { animation-play-state: paused !important; }
+    @media (prefers-reduced-motion: reduce) { .sp-heroes i, .sp-foes span, .sp-boss img, .sp-boss span, #lobby .st-card.sel { animation: none !important; } .st-body { transition: none; } }
 
     /* ===== 재정비 (하트를 잃었을 때) ===== */
     #regroup { z-index: 50; }
@@ -1039,6 +1072,117 @@
     #slotPanel .core-status .inv-grid.cores { grid-template-columns: repeat(8, 1fr); gap: 4px; }
     #slotPanel .core-status .inv-slot { aspect-ratio: auto; height: 32px; font-size: 15px; border-radius: 8px; }
     @media (max-height: 700px) { #slotPanel .slot-grid { width: min(50vw, 200px); } #slotPanel .slide-track { height: min(50vw, 200px, 28dvh); } }
+
+    /* ===== 영구 업그레이드: 막힌 버튼도 눌러서 이유 확인 · 선행 노드로 이동 ===== */
+    #shopList .buy.no { background: #3a3f58; color: #aab2cf; }
+    #shopList .buy.goto { background: #2b3561; border: 1px solid #5b6cff; color: #dfe4ff; min-width: 0; }
+    .node-btns { display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
+    .tx[data-goto] { cursor: pointer; color: #a5b4fc; text-decoration: underline; pointer-events: auto; z-index: 3; }
+    .tree-guide { flex-shrink: 0; border-color: #fbbf24 !important; background: linear-gradient(135deg, #3a3118, #252b42) !important; animation: guidePulse 1.6s ease-in-out infinite; }
+    @keyframes guidePulse { 50% { box-shadow: 0 0 14px rgba(251,191,36,.45); } }
+
+    /* ===== 업그레이드 트리: 노드 탭 = 바로 구매 ===== */
+    .tn { cursor: pointer; transition: transform .1s; } .tn:active { transform: scale(.93); }
+    .tn.just { animation: tnBuy .6s ease-out; z-index: 4; }
+    .tn.nope { animation: tnNope .35s ease-out; }
+    @keyframes tnBuy { 0% { transform: scale(1); box-shadow: 0 0 0 rgba(52,211,153,0); } 30% { transform: scale(1.18); box-shadow: 0 0 22px rgba(52,211,153,.9); } 100% { transform: scale(1); box-shadow: 0 0 0 rgba(52,211,153,0); } }
+    @keyframes tnNope { 20%, 60% { transform: translateX(-4px); } 40%, 80% { transform: translateX(4px); } }
+    .tn-pop { position: absolute; z-index: 6; transform: translateY(-100%); padding: 5px 9px; border-radius: 10px; background: rgba(20,24,44,.96); border: 1px solid #f87171; color: #fecaca;
+      font-size: 11px; font-weight: 700; line-height: 1.35; text-align: center; white-space: normal; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,.5); animation: tnPop 1.7s ease forwards; }
+    .tn-pop.below { transform: none; }
+    .tn-pop.ok { border-color: #34d399; color: #bbf7d0; background: rgba(12,40,30,.96); }
+    @keyframes tnPop { 0% { opacity: 0; margin-top: 8px; } 12% { opacity: 1; margin-top: 0; } 75% { opacity: 1; } 100% { opacity: 0; margin-top: -10px; } }
+    /* ===== 영문(English) 레이아웃 보정 ===== */
+    .lb-page { min-width: 0; }
+    html[lang="en"] .tn b { font-size: 9px; letter-spacing: -.2px; word-break: normal; overflow-wrap: anywhere; }
+    /* ===== 튜토리얼 ===== */
+    #tut { position: absolute; inset: 0; z-index: 280; pointer-events: none; display: none; }
+    #tut.on { display: block; }
+    #tut.sleep { display: none; }
+    .tut-hole { position: absolute; left: 50%; top: 50%; width: 0; height: 0; border-radius: 14px; box-shadow: 0 0 0 200vmax rgba(3,6,16,.64);
+      transition: left .22s ease, top .22s ease, width .22s ease, height .22s ease, opacity .3s; }
+    .tut-hole::after { content: ''; position: absolute; inset: -3px; border-radius: inherit; border: 2px solid #fde68a; box-shadow: 0 0 16px rgba(253,230,138,.75), inset 0 0 10px rgba(253,230,138,.35); animation: tutRing 1.3s ease-in-out infinite; }
+    .tut-hole.none::after { display: none; }
+    #tut.tip .tut-hole { opacity: 0; }
+    @keyframes tutRing { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+    .tut-zone { position: absolute; display: none; border: 2px dashed rgba(253,230,138,.9); border-radius: 12px; background: rgba(253,230,138,.12); animation: tutRing 1.1s ease-in-out infinite; transition: background .3s, border-color .3s; }
+    .tut-zone.show { display: block; }
+    .tut-zone.ok { border-color: #4ade80; background: rgba(74,222,128,.18); animation: none; }
+    .tut-zone span { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); padding: 2px 8px; border-radius: 8px; background: rgba(14,18,36,.85); color: #fde68a; font-size: 11px; font-weight: 800; white-space: nowrap; }
+    .tut-zone.ok span { color: #86efac; }
+    .tut-mark { position: absolute; display: none; border-radius: 50%; border: 2px solid #fde68a; box-shadow: 0 0 14px rgba(253,230,138,.9), inset 0 0 10px rgba(253,230,138,.5); animation: tutMark 1s ease-in-out infinite; }
+    .tut-mark.show { display: block; }
+    @keyframes tutMark { 0%, 100% { transform: scale(1); opacity: .65; } 50% { transform: scale(1.12); opacity: 1; } }
+    .tut-hand { position: absolute; left: 0; top: 0; font-size: 30px; line-height: 1; display: none; filter: drop-shadow(0 3px 4px rgba(0,0,0,.6)); animation: tutHandU .8s ease-in-out infinite; }
+    .tut-hand.dn { animation-name: tutHandD; }
+    .tut-hand.drag { animation: tutDrag 1.7s ease-in-out infinite; }
+    .tut-hand.side { animation: tutHandS .8s ease-in-out infinite; }
+    @keyframes tutHandS { 0%, 100% { transform: translateX(calc(-50% - 5px)); } 50% { transform: translateX(calc(-50% + 5px)); } }
+    #tut.act .tut-hand { display: block; }
+    @keyframes tutHandU { 0%, 100% { transform: translate(-50%, 4px); } 50% { transform: translate(-50%, -6px); } }
+    @keyframes tutHandD { 0%, 100% { transform: translate(-50%, -4px); } 50% { transform: translate(-50%, 6px); } }
+    @keyframes tutDrag { 0% { transform: translate(-50%, 0) scale(1.1); opacity: 0; } 12% { transform: translate(-50%, 0) scale(.92); opacity: 1; }
+      68% { transform: translate(calc(-50% + var(--dx, 0px)), var(--dy, 0px)) scale(.92); opacity: 1; } 82%, 100% { transform: translate(calc(-50% + var(--dx, 0px)), var(--dy, 0px)) scale(1.1); opacity: 0; } }
+    .tut-bub { position: absolute; left: 10px; right: 10px; top: 40%; display: flex; gap: 10px; padding: 12px 12px 10px 8px; border-radius: 16px; pointer-events: auto;
+      background: linear-gradient(180deg, #252e52, #161b34); border: 1.5px solid #fde68a; color: #e6ebff; box-shadow: 0 12px 30px rgba(0,0,0,.6);
+      transition: top .28s cubic-bezier(.2,.8,.2,1); }
+    .tut-bub.pop { animation: tutIn .32s ease-out; }
+    @keyframes tutIn { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: none; } }
+    .tut-por { width: 54px; height: 62px; flex-shrink: 0; align-self: flex-end; background: center bottom / contain no-repeat var(--tutp); filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); animation: tutPor 2.4s ease-in-out infinite; transform-origin: 50% 100%; }
+    @keyframes tutPor { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.03); } }
+    .tut-txt { flex: 1; min-width: 0; }
+    .tut-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .tut-ttl { font-family: 'Black Han Sans', -apple-system, sans-serif; font-weight: 400; font-size: 17px; color: #fde68a; letter-spacing: .3px; word-break: keep-all; }
+    .tut-no { flex-shrink: 0; font-size: 10px; font-weight: 700; color: #8f9bc7; }
+    .tut-body { margin: 4px 0 8px; font-size: 12.5px; line-height: 1.5; color: #dfe6ff; word-break: keep-all; overflow-wrap: anywhere; }
+    .tut-btns { display: flex; justify-content: flex-end; align-items: center; gap: 10px; }
+    .tut-skip { background: none; border: 0; padding: 4px 2px; color: #8f9bc7; font-size: 12px; text-decoration: underline; cursor: pointer; }
+    .tut-next { height: 32px; padding: 0 16px; border: 0; border-radius: 10px; font-size: 13px; font-weight: 800; color: #2a1700; background: linear-gradient(180deg, #ffe48a, #f5a70b); box-shadow: 0 2px 0 #8a5a06; cursor: pointer; }
+    .tut-next:active { transform: translateY(2px); box-shadow: none; }
+    #tut.act .tut-next { display: none; }
+    #tut.tip .tut-bub { border-color: rgba(253,230,138,.55); padding: 9px 10px 8px 6px; background: linear-gradient(180deg, rgba(37,46,82,.94), rgba(22,27,52,.94)); }
+    #tut.tip .tut-por { width: 42px; height: 48px; }
+    #tut.tip .tut-body { margin-bottom: 4px; }
+    #tut.tip .tut-next { height: 26px; padding: 0 12px; font-size: 12px; background: #2d3660; color: #dfe6ff; box-shadow: none; }
+    .opt-tut { width: 100%; height: 40px; margin-top: 4px; border-radius: 12px; border: 1px solid #3d4874; background: #1d2440; color: #dfe6ff; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .opt-tut.warn { border-color: #f59e0b; color: #fde68a; background: #3a2f12; }
+    /* ===== 게임 중 메뉴 ===== */
+    .menu-btn { position: absolute; left: 8px; top: 8px; z-index: 35; width: 36px; height: 36px; padding: 0; border-radius: 12px; border: 1px solid rgba(255,255,255,.3);
+      background: rgba(10,14,30,.55); color: #fff; font-size: 18px; line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,.35); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+    .menu-btn:active { transform: scale(.9); }
+    #pauseMenu { z-index: 65; background: rgba(3,5,14,.7); }
+    .pm-card { width: min(300px, 84%); padding: 20px 18px 16px; border-radius: 20px; background: linear-gradient(180deg, #232b4d, #151a31); border: 1px solid #3d4874;
+      box-shadow: 0 16px 40px rgba(0,0,0,.6); text-align: center; color: #e6ebff; animation: optPop .22s ease-out; }
+    .pm-card h2 { margin: 0 0 4px; font-family: 'Black Han Sans', -apple-system, sans-serif; font-weight: 400; font-size: 26px; letter-spacing: 2px; color: #fde68a; }
+    .pm-info { margin: 0 0 14px; font-size: 12px; line-height: 1.45; color: #9aa6d0; white-space: pre-line; }
+    .pm-btns, .pm-row { display: flex; flex-direction: column; gap: 8px; }
+    .pm-row { flex-direction: row; } .pm-row .pm-btn { flex: 1; }
+    .pm-btn { height: 44px; border-radius: 13px; border: 1px solid #3d4874; background: #1d2440; color: #dfe6ff; font-size: 14px; font-weight: 800; cursor: pointer; }
+    .pm-btn:active { transform: translateY(1px); }
+    .pm-btn.main { border: 0; color: #2a1700; background: linear-gradient(180deg, #ffe48a, #f5a70b); box-shadow: 0 3px 0 #8a5a06; font-size: 16px; }
+    .pm-btn.warn { border-color: #b45309; background: #4a2a0a; color: #fde68a; }
+    .pm-confirm { display: none; }
+    #pauseMenu.ask .pm-btns { display: none; }
+    #pauseMenu.ask .pm-confirm { display: block; }
+    .pm-confirm p { margin: 2px 0 6px; font-size: 15px; font-weight: 800; word-break: keep-all; }
+    .pm-confirm small { display: block; margin-bottom: 14px; font-size: 11.5px; color: #9aa6d0; word-break: keep-all; }
+    /* ===== 코어·아이템 발동 ===== */
+    .inv-slot.fire { animation: invFire .9s ease-out; position: relative; z-index: 2; }
+    .inv-slot.fire::after { content: ''; position: absolute; inset: -3px; border-radius: inherit; pointer-events: none; animation: invRing .9s ease-out forwards;
+      background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.75) 48%, transparent 62%) -120% 0 / 250% 100% no-repeat; box-shadow: 0 0 0 2px #fde68a, 0 0 18px #fbbf24; }
+    .inv-slot.fire.core::after { box-shadow: 0 0 0 2px #c4b5fd, 0 0 18px #8b5cf6; }
+    @keyframes invFire { 0% { transform: scale(1); filter: brightness(1); } 18% { transform: scale(1.22) rotate(-4deg); filter: brightness(1.9); } 40% { transform: scale(.94) rotate(2deg); } 60% { transform: scale(1.06); } 100% { transform: none; filter: none; } }
+    @keyframes invRing { 0% { opacity: 1; background-position: -120% 0; } 70% { opacity: 1; background-position: 120% 0; } 100% { opacity: 0; background-position: 120% 0; } }
+    .inv-pop { position: absolute; z-index: 240; transform: translate(-50%, -100%); pointer-events: none; display: flex; align-items: center; gap: 5px; white-space: nowrap;
+      padding: 4px 10px; border-radius: 12px; background: linear-gradient(180deg, #3a2f12, #1d1708); border: 1.5px solid #fbbf24; color: #fde68a; font-size: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.5), 0 0 12px rgba(251,191,36,.45); animation: invPop 1.5s ease-out forwards; }
+    .inv-pop.core { background: linear-gradient(180deg, #2c2152, #150f2c); border-color: #a78bfa; color: #ede9fe; box-shadow: 0 4px 12px rgba(0,0,0,.5), 0 0 12px rgba(139,92,246,.5); }
+    .inv-pop b { font-weight: 800; } .inv-pop i { font-style: normal; font-size: 10px; font-weight: 900; opacity: .85; }
+    @keyframes invPop { 0% { opacity: 0; margin-top: 6px; scale: .6; } 14% { opacity: 1; margin-top: -6px; scale: 1.08; } 24% { scale: 1; } 75% { opacity: 1; margin-top: -16px; } 100% { opacity: 0; margin-top: -26px; } }
+    .inv-spark { position: absolute; z-index: 239; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; pointer-events: none; background: #fff; box-shadow: 0 0 6px #fde68a, 0 0 10px #fbbf24; animation: invSpark .6s ease-out forwards; }
+    @keyframes invSpark { to { transform: translate(var(--sx), var(--sy)) scale(.2); opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .inv-slot.fire, .inv-slot.fire::after { animation: none; } .inv-spark { display: none; } }
   </style>
 </head>
 <body>
@@ -1058,6 +1202,7 @@
         <div class="field" id="field"></div>
         <div class="core-status battle-status" id="coreStatus2"></div>
         <div class="battle-msg" id="battleMsg"></div>
+        <button type="button" class="menu-btn" id="menuBtn" aria-label="메뉴" title="메뉴 (Esc)">☰</button>
         <div class="fx" id="fx"></div>
       </div>
 
@@ -1105,6 +1250,24 @@
       <div class="rs-card"><h2 id="rsTitle">GAME OVER</h2><p id="rsText"></p><button class="start-btn" id="rsNext" style="display:none">다음 스테이지</button> <button class="start-btn" id="rsBtn">다시 시작</button> <button class="start-btn" id="rsUpg">🔮 업그레이드</button> <button class="start-btn" id="rsLobby">로비</button></div>
     </div>
 
+    <div class="result-screen" id="pauseMenu">
+      <div class="pm-card">
+        <h2>일시정지</h2>
+        <p class="pm-info" id="pmInfo"></p>
+        <div class="pm-btns">
+          <button type="button" class="pm-btn main" data-a="resume">▶ 계속하기</button>
+          <button type="button" class="pm-btn" data-a="opt">⚙️ 옵션</button>
+          <button type="button" class="pm-btn" data-a="restart">↻ 처음부터 다시</button>
+          <button type="button" class="pm-btn" data-a="lobby">🗺️ 스테이지 선택</button>
+          <button type="button" class="pm-btn" data-a="title">🏠 메인 메뉴</button>
+        </div>
+        <div class="pm-confirm">
+          <p id="pmQ"></p>
+          <small>지금까지 얻은 💎 기원석과 최고 기록은 그대로 남아요.</small>
+          <div class="pm-row"><button type="button" class="pm-btn" data-a="no">취소</button><button type="button" class="pm-btn warn" data-a="yes" id="pmYes">나가기</button></div>
+        </div>
+      </div>
+    </div>
     <div class="result-screen" id="regroup">
       <div class="rs-card"><h2>💔 재정비!</h2><p id="rgText"></p><ul class="rg-list" id="rgList"></ul><button type="button" class="rg-ok" id="rgOk">보강하러 가기</button></div>
     </div>
@@ -1148,11 +1311,12 @@
         <div class="opt-row sub" data-for="bgm"><span class="opt-ic">🔈</span><input type="range" min="0" max="100" step="5" data-k="bgmVol"><em data-v="bgmVol"></em></div>
         <div class="opt-row"><span>🔊 효과음</span><label class="sw"><input type="checkbox" data-k="sfx"><i></i></label></div>
         <div class="opt-row sub" data-for="sfx"><span class="opt-ic">🔈</span><input type="range" min="0" max="100" step="5" data-k="sfxVol"><em data-v="sfxVol"></em></div>
-        <div class="opt-sec">언어 · Language <span class="opt-soon">준비 중</span></div>
-        <div class="opt-seg" id="optLang"><button type="button" data-v="ko">한국어</button><button type="button" data-v="en">English</button></div>
+        <div class="opt-sec">언어 · Language</div>
+        <div class="opt-seg" id="optLang" translate="no"><button type="button" data-v="ko">한국어</button><button type="button" data-v="en">English</button></div>
         <div class="opt-sec">플레이</div>
         <div class="opt-row"><span>📳 진동</span><label class="sw"><input type="checkbox" data-k="vib"><i></i></label></div>
         <div class="opt-row"><span>💥 화면 흔들림</span><label class="sw"><input type="checkbox" data-k="shake"><i></i></label></div>
+        <button type="button" class="opt-tut" id="optTut" title="단축키 T">📖 튜토리얼 다시 보기</button>
         <div class="opt-note" id="optNote"></div>
         <button type="button" class="opt-ok" id="optOk">확인</button>
       </div>
@@ -1672,7 +1836,7 @@
       function progTarget() { if (S.show != null) return S.showP; try { if (G.stage < 0) return ((G.wave - 1) % 5) / 4; const m = waveMax(); return m > 1 ? clamp((G.wave - 1) / (m - 1), 0, 1) : 0; } catch (e) { return 0; } }
 
       function feet(a, prep) { // 캐릭터 발밑 (캔버스 픽셀 + 땅 좌표)
-        let bx = a.bx, by = a.by;
+        let bx = !prep && a._dx != null ? a._dx : a.bx, by = !prep && a._dy != null ? a._dy : a.by; // 화면에 보이는(보간된) 위치
         if (prep || bx == null) { const h = homeOf(a); bx = h.x; by = h.y; }
         const k = kOf(by) * (a.big > 0 ? 1.35 : 1), x = LX + bx / 100 * LW, y = yOf(by) + (prep ? S.footP : S.footF) * D * k, fb = byOf(y);
         return { x, y, by: fb, k: kOf(fb), u: uOf(x, fb) };
@@ -1760,6 +1924,11 @@
           if (prep) continue;
           const pv = prev.get(a) || [a.bx, a.by, -9]; if (Math.abs(pv[0] - a.bx) + Math.abs(pv[1] - a.by) > 0.02) pv[2] = T; pv[0] = a.bx; pv[1] = a.by; prev.set(a, pv);
           const walking = T - pv[2] < 0.22 || (S.mv && S.mv.t > 0 && !foe);
+          if (a._foot != null) { // MOTION이 알려주는 실제 발 디딤 순간에 먼지
+            const fm = S.footN || (S.footN = new WeakMap()), lf = fm.get(a); fm.set(a, a._foot);
+            if (lf != null && lf !== a._foot && walking && a.bx <= 101 && a.bx >= -2 && !RM && steps < 6) { steps++; TH.step.call(TH, f); }
+            continue;
+          }
           if (!walking || a.bx > 101 || a.bx < -2 || RM) continue;
           let st = (S.stepT.get(a) || 0) + dt; if (st > 0.26 && steps < 4) { st = R() * 0.05; steps++; TH.step.call(TH, f); } S.stepT.set(a, st);
         }
@@ -2072,7 +2241,7 @@
       function loop(now) {
         raf = 0;
         if (!cv || !cv.isConnected) { cv = null; ensure(); return; }
-        const covered = !!document.querySelector('.result-screen.show');
+        const covered = !!document.querySelector('.result-screen.show:not(#lobby)');
         if (covered && now - lastDraw < 60) { raf = requestAnimationFrame(loop); return; } // 로비·결과 화면에 가려지면 느리게
         const dt = Math.min(0.05, Math.max(0, (now - (lastDraw || now)) / 1000)); lastDraw = now;
         try {
@@ -2226,7 +2395,7 @@
     }
     function openPanel() {
       if (G.phase === 'fight') { battleMsg.textContent = '전투 중에는 슬롯을 열 수 없어요'; return; }
-      slotPanel.classList.add('open');
+      slotPanel.classList.add('open'); rescueCheck();
       overlay.classList.remove('show'); mainArea.classList.remove('dimmed'); // 전장을 가리지 않음
       setDock(true);
     }
@@ -2392,6 +2561,7 @@
         c.classList.toggle('line-glow', idx.has(i) && lines.length >= 2);
       });
       if (!lines.length) return 0;
+      G.missStreak = 0;
       if (hasCore('goldTooth') && waveUse('goldTooth')) { G.freeNext = true; coreFire('goldTooth'); } // 금니: 웨이브 첫 당첨 → 다음 스핀 무료
       const jackpot = lines.length >= 2;
       let n = 0, legends = 0, forceAdv = jackpot || !!G.golden;
@@ -2434,11 +2604,21 @@
         slotWinGlow(false);
         try { navigator.vibrate && SET.vib && navigator.vibrate(40); } catch(e){}
       }
-      say(`${lines.length}줄 매칭! ` + (n < lines.length ? `자리가 부족해 ${n}기만 소환` : `${n}기 소환`) + (legends ? ' · 🌈 전설 유닛!' : '') + (jackpot ? ' · ✨ 잭팟 보너스 🔷+' + (lines.length >= 3 ? 4 : 2) + (lines.length >= 3 ? ' (스핀 +2)' : '') : ''), n > 0);
+      const pityTag = G.pityHit ? '🍀 확정 당첨! ' : ''; G.pityHit = false;
+      say(pityTag + `${lines.length}줄 매칭! ` + (n < lines.length ? `자리가 부족해 ${n}기만 소환` : `${n}기 소환`) + (legends ? ' · 🌈 전설 유닛!' : '') + (jackpot ? ' · ✨ 잭팟 보너스 🔷+' + (lines.length >= 3 ? 4 : 2) + (lines.length >= 3 ? ' (스핀 +2)' : '') : ''), n > 0);
       updateHud();
       return lines.length;
     }
 
+    // ===== 시작 불운 방지: 첫 스핀 확정 당첨 · 꽝 보정(연속 2번 빗나가면 다음은 확정) · 긴급 지원 =====
+    const PITY_MISS = 2;
+    function rescueCheck() { // 출전·대기 유닛이 하나도 없는데 스핀할 횟수나 골드가 없으면 → 무료 확정 스핀 1회
+      if (G.phase !== 'prep' || G.spinning || G.units.length || G.bench.length) return false;
+      if (G.spins > 0 && G.gold >= spinCost()) return false;
+      G.spins = Math.max(1, G.spins); G.freeNext = true; G.cbSpin = true; updateHud();
+      say('🆘 긴급 지원: 유닛이 없어 무료 확정 스핀 1회를 드려요!'); battleMsg.textContent = '🆘 긴급 지원: 슬롯을 열어 무료 확정 스핀을 돌리세요';
+      return true;
+    }
     // 스핀이 시작되면 true, 거절되면 false (이유는 로그로 안내)
     function doSpin() {
       if (G.spinning || G.phase === 'over') return false;
@@ -2460,7 +2640,10 @@
       ensureMarks();
       const SPs = SYMBOLS.find(x => x.name === 'Special');
       const applyMods = result => { // 코어에 의한 스핀 결과 조작
-        if (G.cbSpin) { G.cbSpin = false; const f = weightedRandom(true); [0, 1, 2].forEach(i => { result[i] = f; }); } // 역전 레버: 반드시 당첨
+        if (G.tutPick) { const ts = SYMBOLS.find(x => x.name === G.tutPick); G.tutPick = null; if (ts) { G.cbSpin = false; G.missStreak = 0; G.pityHit = true; // 튜토리얼: 맨 윗줄만 정해진 유닛, 나머지는 줄이 생기지 않게
+          const o = ['Warrior', 'Archer', 'Spearman', 'Mage'].filter(n => n !== ts.name).slice(0, 3).map(n => SYMBOLS.find(x => x.name === n));
+          [ts, ts, ts, o[0], o[1], o[2], o[1], o[2], o[0]].forEach((x, i) => { result[i] = x; }); } }
+        if (G.cbSpin || (G.missStreak || 0) >= PITY_MISS) { G.pityHit = true; G.cbSpin = false; G.missStreak = 0; const f = weightedRandom(true); [0, 1, 2].forEach(i => { result[i] = f; }); } // 확정 당첨: 첫 스핀 · 꽝 보정 · 역전 레버 · 재정비
         if (hasCore('blackNote') && (firstOfWave || (hasCore('echoShell') && echoTarget() === 'blackNote' && G.waveSpin === 2))) { coreFire('blackNote'); if (!firstOfWave) coreFire('echoShell'); result[Math.floor(Math.random() * 9)] = SPs; } // 검은 악보
         if (hasCore('tornNote') && G.spinCount % 6 === 0) { result[Math.floor(Math.random() * 9)] = SPs; coreFire('tornNote'); }
         if (hasCore('jokerSeed')) result.forEach((_, i) => { if (Math.random() < 0.015) { result[i] = SPs; coreFire('jokerSeed'); } });
@@ -2472,9 +2655,9 @@
       };
       const resolveSpin = result => {
         G.grid = result;
-        const finishSpin = () => { kegCheck(); burstCheck(); G.spinning = false; setTimeout(resetSlide, 350); updateHud(); checkDraft(); };
+        const finishSpin = () => { kegCheck(); burstCheck(); G.spinning = false; setTimeout(resetSlide, 350); updateHud(); checkDraft(); rescueCheck(); };
         const w1 = evalGrid();
-        if (!w1 && !(onMiss(firstOfWave) && evalGrid())) { if (G.chPot > 0) { G.chPot = 0; say('🏆 탐욕의 성배: 미당첨으로 적립금 몰수'); } G.nudge = true; say(`매칭 없음 · 칸을 탭하면 그 열이 한 칸 내려가요 (넛지 -${NUDGE_COST})`); finishSpin(); }
+        if (!w1 && !(onMiss(firstOfWave) && evalGrid())) { if (G.chPot > 0) { G.chPot = 0; say('🏆 탐욕의 성배: 미당첨으로 적립금 몰수'); } G.missStreak = (G.missStreak || 0) + 1; G.nudge = true; say(`매칭 없음 · 칸을 탭하면 그 열이 한 칸 내려가요 (넛지 -${NUDGE_COST}) · ${G.missStreak >= PITY_MISS ? '🍀 다음 스핀 확정 당첨!' : `꽝 보정 ${G.missStreak}/${PITY_MISS}`}`); finishSpin(); }
         else if (hasCore('updraft')) { // 상승 깃털: 폭파 후 빈칸을 아래쪽에서 채우며 심볼이 위로 밀려 올라감 (연쇄 최대 3회)
           const chain = k => setTimeout(() => {
             const mi = new Set(Array.from(cells).map((c, i) => c.classList.contains('matched') ? i : -1).filter(i => i >= 0));
@@ -2735,6 +2918,7 @@
     }
     function beginAbsorb(targetIndex, foodIndex) {
       if (G.phase === 'fight') { battleMsg.textContent = '전투 중에는 흡수할 수 없어요'; return; }
+      if (TUT.noAbsorb) { battleMsg.textContent = '지금은 빈 땅에 놓아 자리만 옮겨 볼게요'; renderField(); return; }
       if (targetIndex === foodIndex) return;
       const k = getU(targetIndex), f = getU(foodIndex);
       if (!k || !f) return;
@@ -2810,6 +2994,7 @@
     }
     function finishAbsorb(choice) {
       const p = pendingAbsorb; if (!p) return;
+      if (iLv('p_abs') > 0) setTimeout(() => invFire('item', 'p_abs'), 300);
       const u = p.unit, f = p.food; let note = '';
       const fi = G.units.indexOf(f), bi = G.bench.indexOf(f);
       if (fi < 0 && bi < 0) { cancelAbsorb(); return; } // 재료가 이미 사라졌다면 중단
@@ -2971,7 +3156,7 @@
       }
       if (d.fromField && d.index < 100) {
         const act = allyTargetAt(e.clientX, e.clientY);
-        if (act && act.dataset.i !== undefined && Number(act.dataset.i) !== d.index) { beginAbsorb(Number(act.dataset.i), d.index); return; }
+        if (act && act.dataset.i !== undefined && Number(act.dataset.i) !== d.index && !TUT.noAbsorb) { beginAbsorb(Number(act.dataset.i), d.index); return; }
         if (setUnitPosFromPoint(d.index, e.clientX, e.clientY)) {
           sel = -1;
           renderBoard(); renderField(); updateHud();
@@ -3120,26 +3305,94 @@
 
     // ========== 로비 = 스테이지 선택 ==========
     let lbDiff = 0;
-    function renderLobby() { // 스테이지 선택: 스테이지마다 색이 다른 카드
+    let lbSel = null, lbScrollT = 0; // 펼쳐진(선택된) 스테이지 (-1 = 무한 모드, null = 자동: 아직 못 깬 첫 스테이지)
+    const LB_SHOW_P = [0.35, 0.95, 0.7, 0.95, 0.6, 0.9]; // 미리보기에서 보여줄 시간대 (메인 화면과 같음)
+    ['Warrior', 'Spearman', 'Archer', 'Mage'].forEach((n, i) => { if (ART[n]) $('lobby').style.setProperty('--lbh' + i, `url("${ART[n]}")`); });
+    function lbDefault() {
+      for (let i = 0; i < STAGES.length; i++) if (diffOpen(i, lbDiff) && !CLR(i, lbDiff)) return i;
+      let last = 0; for (let i = 0; i < STAGES.length; i++) if (diffOpen(i, lbDiff)) last = i; return last;
+    }
+    const lbBossHtml = b => b ? (ART[b.k] ? `<img src="${ART[b.k]}" alt="">` : `<span>${b.ic}</span>`) : '';
+    const lbFoesHtml = st => (st ? st.roster : []).map((r, j) => `<span style="--j:${j}">${r[0]}</span>`).join('');
+    function lbCard(o) {
+      const tag = o.done ? '<span class="st-tag ok">✔ CLEAR</span>' : !o.open ? '<span class="st-tag">🔒</span>' : '';
+      return `<div class="st-card ${o.cls}${o.open ? '' : ' lock'}${o.done ? ' done' : ''}${o.i === lbSel ? ' sel' : ''}" data-s="${o.i}">`
+        + `<button type="button" class="st-head"><span class="st-ic">${o.ic}</span><span class="st-main"><span class="st-no">${o.no}</span><b>${o.name}</b></span>${tag}<span class="st-chev">▼</span></button>`
+        + `<div class="st-body"><div class="st-in"><div class="st-pad">`
+        + `<div class="st-prev"><canvas></canvas><div class="sp-heroes"><i></i><i></i><i></i><i></i></div><div class="sp-foes">${lbFoesHtml(o.st)}</div><div class="sp-boss">${lbBossHtml(o.boss)}</div>`
+        + `<div class="sp-tags"><span>${o.rule}</span>${o.boss ? `<span class="sp-bn">👑 최종 보스 · ${o.boss.n}</span>` : ''}</div>`
+        + (o.open ? '' : `<div class="sp-lock"><b>🔒</b><span>${o.why}</span></div>`) + `</div>`
+        + `<button type="button" class="st-start"${o.open ? '' : ' disabled'}>${o.open ? `<i>${o.done ? '↻' : '▶'}</i>${o.go}` : '<i>🔒</i>잠김'}</button>`
+        + `</div></div></div></div>`;
+    }
+    function renderLobby() { // 스테이지 선택: 접힌 카드(제목만) + 선택된 카드는 맵 미리보기로 펼쳐짐
       $('lbText').innerHTML = `최고 기록 <b>Wave ${META.best}</b> · 💎 <b>${META.ruby}</b>`;
       $('lbDiff').innerHTML = DIFFS.map((d, i) => `<button class="dtab${i === lbDiff ? ' on' : ''}" data-d="${i}">${d.n}<small>${d.wv}웨이브</small></button>`).join('');
+      if (lbSel == null) lbSel = lbDefault();
       $('lbStages').innerHTML = STAGES.map((s, i) => {
-        const open = diffOpen(i, lbDiff), done = CLR(i, lbDiff), bs = BOSSES[i][lbDiff];
-        const why = !stageOpen(i) ? `${STAGES[i - 1].n} Easy 클리어 필요` : !open ? `${DIFFS[lbDiff - 1].n} 클리어 필요` : s.rule;
-        return `<button type="button" class="buy st-card st${i}${open ? '' : ' lock'}${done ? ' done' : ''}" data-s="${i}" ${open ? '' : 'disabled'}>`
-          + `<span class="st-ic">${s.ic}</span><span class="st-main"><span class="st-no">STAGE ${i + 1}</span><b>${s.n}</b><small>${why}</small>${open ? `<small class="st-bn">최종 보스 · ${bs.n}</small>` : ''}</span>`
-          + `<span class="st-side">${open ? `<span class="st-boss">${bs.ic}</span><span class="st-go">${done ? '재도전' : '출전'}</span>` : '<span class="st-lock">🔒</span>'}</span>${done ? '<span class="st-clear">CLEAR</span>' : ''}</button>`;
-      }).join('') + `<button type="button" class="buy st-card inf${infOpen() ? '' : ' lock'}" data-s="-1" ${infOpen() ? '' : 'disabled'}><span class="st-ic">♾️</span><span class="st-main"><span class="st-no">ENDLESS</span><b>무한 모드</b><small>${infOpen() ? '끝없는 웨이브 · 5웨이브마다 보스 · 스테이지가 계속 바뀜' : '캠페인 완료(6스테이지 Easy 클리어) 필요'}</small></span><span class="st-side">${infOpen() ? '<span class="st-go">도전</span>' : '<span class="st-lock">🔒</span>'}</span></button>`;
+        const open = diffOpen(i, lbDiff), done = CLR(i, lbDiff);
+        const why = !stageOpen(i) ? `${STAGES[i - 1].n} Easy 클리어 필요` : !open ? `${DIFFS[lbDiff - 1].n} 클리어 필요` : '';
+        return lbCard({ i, cls: 'st' + i, ic: s.ic, no: `STAGE ${i + 1}`, name: s.n, open, done, why, rule: s.rule, st: s, boss: BOSSES[i][lbDiff], go: done ? '재도전' : '출전' });
+      }).join('') + lbCard({ i: -1, cls: 'inf', ic: '♾️', no: 'ENDLESS', name: '무한 모드', open: infOpen(), done: false, why: '캠페인 완료(6스테이지 Easy 클리어) 필요',
+        rule: '끝없는 웨이브 · 5웨이브마다 보스 · 스테이지가 계속 바뀜', st: STAGES[0], boss: BOSSES[0][0], go: '도전' });
+      LBP.start(); lbReveal(false);
     }
+    function lbReveal(smooth) { // 펼쳐진 카드가 목록 안에 다 보이도록 스크롤
+      const L = $('lbStages'), c = L.querySelector('.st-card.sel'); if (!c) return;
+      const r = c.getBoundingClientRect(), lr = L.getBoundingClientRect(); if (!lr.height) return;
+      let dy = 0; if (r.top < lr.top + 2) dy = r.top - lr.top - 4; else if (r.bottom > lr.bottom - 2) dy = Math.min(r.bottom - lr.bottom + 6, r.top - lr.top - 4);
+      if (dy) L.scrollBy({ top: dy, behavior: smooth ? 'smooth' : 'auto' });
+    }
+    function lbSelect(s) {
+      if (s === lbSel) return;
+      lbSel = s;
+      $('lbStages').querySelectorAll('.st-card').forEach(c => c.classList.toggle('sel', +c.dataset.s === s));
+      try { SET.vib && navigator.vibrate && navigator.vibrate(8); } catch (e) {}
+      clearTimeout(lbScrollT); lbScrollT = setTimeout(() => lbReveal(true), 120); setTimeout(() => lbReveal(true), 430);
+    }
+    // 맵 미리보기: 전장 배경(BGW)을 선택한 스테이지로 바꿔 그리고, 그 그림을 펼쳐진 카드의 캔버스에 옮겨 그림
+    const LBP = (() => {
+      let raf = 0, cur = null, lastT = 0, infI = 0, infT = 0;
+      function frame(now) {
+        if (!$('lobby').classList.contains('show')) { raf = 0; cur = null; return; }
+        raf = requestAnimationFrame(frame);
+        const dt = Math.min(0.1, (now - (lastT || now)) / 1000); lastT = now;
+        const card = $('lbStages').querySelector('.st-card.sel'); if (!card) return;
+        const s = +card.dataset.s;
+        let st = s;
+        if (s < 0) { // 무한 모드: 스테이지를 돌아가며 보여줌
+          infT += dt; if (infT > 3.2) { infT = 0; infI = (infI + 1) % STAGES.length; }
+          if (card._inf !== infI) { card._inf = infI; card.querySelector('.sp-boss').innerHTML = lbBossHtml(BOSSES[infI][0]); card.querySelector('.sp-foes').innerHTML = lbFoesHtml(STAGES[infI]); }
+          st = infI;
+        }
+        if (st !== cur) { cur = st; BGW.showcase(st, LB_SHOW_P[st]); }
+        const cv = card.querySelector('canvas'), b = $('bgw'), lay = $('bfLayer'); if (!cv || !b || !b.width || !lay) return;
+        const r = cv.getBoundingClientRect(); if (!r.width || !r.height) return;
+        const d = Math.min(2, window.devicePixelRatio || 1), w = Math.round(r.width * d), hh = Math.round(r.height * d);
+        if (cv.width !== w || cv.height !== hh) { cv.width = w; cv.height = hh; }
+        const br = b.getBoundingClientRect(), lr = lay.getBoundingClientRect(); if (!br.height) return;
+        const A = w / hh; let sw = b.width, sh = sw / A; if (sh > b.height) { sh = b.height; sw = sh * A; }
+        const hy = (lr.top - br.top) / br.height * b.height; // 전장의 지평선 (먼 풍경·보스 거처는 이 위, 길은 아래)
+        const sy = Math.max(0, Math.min(b.height - sh, hy - sh * 0.5)), sx = (b.width - sw) * 0.62;
+        const ctx = cv.getContext('2d'); ctx.drawImage(b, sx, sy, sw, sh, 0, 0, w, hh);
+      }
+      function start() { if (!raf) { lastT = 0; raf = requestAnimationFrame(frame); } }
+      function stop() { cancelAnimationFrame(raf); raf = 0; cur = null; BGW.showcase(null); }
+      return { start, stop };
+    })();
     function startRun(stage, diff) {
+      LBP.stop();
       G.stage = stage; G.diff = diff;
       $('lobby').classList.remove('show');
       resetGame();
+      TUT.stop(); if (!META.tut && stage === 0 && diff === 0) TUT.start(); // 처음이면 첫 웨이브를 튜토리얼로
     }
     $('lbDiff').addEventListener('click', e => { const b = e.target.closest('.dtab'); if (b) { lbDiff = +b.dataset.d; renderLobby(); } });
-    $('lbStages').addEventListener('click', e => {
-      const b = e.target.closest('.buy'); if (!b || b.disabled) return;
-      const s = +b.dataset.s;
+    $('lbStages').addEventListener('click', e => { // 접힌 카드를 누르면 펼쳐서 미리보기, 펼쳐진 카드의 출전 버튼으로 시작
+      const card = e.target.closest('.st-card'); if (!card) return;
+      const s = +card.dataset.s;
+      if (!card.classList.contains('sel')) { lbSelect(s); return; }
+      const go = e.target.closest('.st-start'); if (!go || go.disabled) return;
       startRun(s, s < 0 ? 1 : lbDiff);
     });
     $('rsNext').addEventListener('click', () => { const n = G.stage + 1; $('resultScreen').classList.remove('show'); startRun(n, diffOpen(n, G.diff) ? G.diff : 0); });
@@ -3175,8 +3428,8 @@
     }
     function startWave() {
       if (G.phase !== 'prep') return;
-      if (!G.units.length) { battleMsg.textContent = G.bench.length ? '출전 유닛이 없어요. 예비 유닛을 필드로 드래그하세요' : '유닛이 없어요. 슬롯을 돌려 먼저 소환하세요'; return; }
-      snapshotWaveRoster();
+      if (!G.units.length) { battleMsg.textContent = G.bench.length ? '출전 유닛이 없어요. 예비 유닛을 필드로 드래그하세요' : '유닛이 없어요. 슬롯을 돌려 먼저 소환하세요'; rescueCheck(); return; }
+      snapshotWaveRoster(); G.waveOrder = G.units.slice(); G.fallen = [];
       const w = G.wave, st = themeOf(), df = DIFFS[G.diff], inf = G.stage < 0;
       const sc = inf ? 1 + 0.08 * w : 1 + 0.15 * G.stage;
       const hp = (20 + w * 10) * sc * df.hp * (st.hpM || 1), atk = (2 + w * 1.2) * sc * df.atk;
@@ -3218,6 +3471,7 @@
       if (maj) G.enemies.forEach(e => { e.atk *= 1 - lerp(maj, 0.12, 0.42); const k = 1 - lerp(maj, 0.15, 0.45); e.maxHp *= k; e.hp *= k; }); // 위엄
       const weak = G.retry && G.retry.wave === w ? G.retry.n : 0; // 재정비: 이 웨이브에서 진 횟수만큼 적 약화
       if (weak) G.enemies.forEach(e => { const k = 1 - RETRY_WEAK * weak; e.maxHp = Math.max(1, Math.round(e.maxHp * k)); e.hp = e.maxHp; e.atk *= k; });
+      ['p_atk', 'p_hp', 'p_spd'].concat(has('interest') ? ['p_int'] : []).forEach((id, i) => { if (iLv(id) > 0) setTimeout(() => invFire('item', id), 250 + i * 420); }); // 전투 시작: 패시브 발동
       G.phase = 'fight'; sel = -1; closePanel(); clearInterval(retTimer); G.retT = 0;
       placeForBattle(); renderField();
       startBtn.disabled = true;
@@ -3398,6 +3652,83 @@
           a.bx -= ux * push * 0.5; b.bx += ux * push * 0.5; a.by = Math.max(4, Math.min(96, a.by - uy * push)); b.by = Math.max(4, Math.min(96, b.by + uy * push)); }
       }
     }
+    // ===== 캐릭터 움직임 (걷기 · 대기 · 방향 전환 · 착지) =====
+    // 0.1초마다 바뀌는 전투 좌표를 스프링으로 부드럽게 따라가고, 이동 속도에 맞춰 발걸음을 진행시킵니다.
+    // 걷기와 대기 자세는 비율(w)로 섞어서 전환이 끊기지 않게 합니다. 공격·피격 동작(CSS)은 그대로 위에 덮어 재생됩니다.
+    const MOTION = (() => {
+      const BF = new WeakMap(), PU = new WeakMap(), TAU = Math.PI * 2;
+      const RMQ = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : null;
+      const cl = (v, a, b) => v < a ? a : v > b ? b : v;
+      let last = 0;
+      function damp(cur, to, vel, st, dt) { // 임계감쇠 스프링 (Unity SmoothDamp 방식)
+        const o = 2 / st, x = o * dt, e = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x), ch = cur - to, tmp = (vel + o * ch) * dt;
+        return [to + (ch + tmp) * e, (vel - o * tmp) * e];
+      }
+      const seed = a => (a._ip != null ? a._ip : (a._ip = Math.random() * 100));
+      function idlePose(a, t, fight, cav) { // 대기: 호흡(위아래로 살짝 늘었다 줄었다) + 무게중심 이동
+        const sp = 0.88 + (seed(a) % 1) * 0.24, P = (fight ? 1.25 : cav ? 3.1 : 2.6) * sp, b = Math.sin(t * TAU / P + seed(a));
+        const amp = fight ? 0.024 : 0.017;
+        return { y: fight ? -0.6 * (b * 0.5 + 0.5) : 0, r: (fight ? 0.5 : 0.8) * Math.sin(t * TAU / (4.3 * sp) + seed(a) * 1.7), sx: 1 - amp * 0.45 * b, sy: 1 + amp * b };
+      }
+      function walkPose(ph, sc, dir, lean, cav) {
+        if (cav) { // 기병: 한 박자에 한 번 크게 도약, 앞뒤로 흔들리는 갤럽
+          const u = Math.sin(ph), up = Math.max(0, u), land = Math.pow(Math.max(0, -u), 3);
+          return { y: -(6.5 * Math.pow(up, 0.8) + 0.8) * sc, r: (-5.5 * Math.cos(ph) + lean) * dir, sx: 1 + 0.05 * land, sy: 1 - 0.06 * land + 0.03 * up };
+        }
+        const u = Math.abs(Math.sin(ph)), k = Math.pow(1 - u, 5); // u: 발이 떠 있는 정도, k: 발 디딤 순간
+        return { y: -3.2 * sc * u, r: 1.8 * Math.sin(ph) + lean * dir, sx: 1 + 0.05 * k, sy: 1 - 0.06 * k + 0.022 * u };
+      }
+      function put(ico, p, base) {
+        ico.style.transform = `translateY(${p.y.toFixed(2)}px) rotate(${p.r.toFixed(2)}deg) scale(${(p.sx * base).toFixed(3)},${(p.sy * base).toFixed(3)})`;
+      }
+      function mix(a, b, w) { return { y: a.y + (b.y - a.y) * w, r: a.r + (b.r - a.r) * w, sx: a.sx + (b.sx - a.sx) * w, sy: a.sy + (b.sy - a.sy) * w }; }
+      function bfActor(el, now, dt, W, H, fight) { // 전투 화면의 캐릭터
+        const a = el._a, ico = el.children[1]; if (!a || !ico || a.bx == null) return;
+        let s = BF.get(el);
+        if (!s) { s = { x: a.bx, y: a.by, vx: 0, vy: 0, w: 0, ph: Math.random() * TAU, fs: a.face < 0 ? -1 : 1 }; BF.set(el, s); ico.classList.add('mo'); }
+        [s.x, s.vx] = damp(s.x, a.bx, s.vx, 0.11, dt); [s.y, s.vy] = damp(s.y, a.by, s.vy, 0.11, dt);
+        el.style.left = s.x.toFixed(2) + '%'; el.style.top = s.y.toFixed(2) + '%'; a._dx = s.x; a._dy = s.y;
+        const foe = el.classList.contains('foe'), cav = el.dataset.fam === 'Cavalry', sc = 0.8 + s.y * 0.004;
+        const pvx = s.vx * W / 100, pvy = s.vy * H / 100, spd = Math.hypot(pvx, pvy * 0.7); // 화면 속도 (px/초)
+        const intent = now - (el._mvT || 0) < 190, moving = intent || spd > 9;
+        s.w += ((moving ? 1 : 0) - s.w) * Math.min(1, dt / (moving ? 0.08 : 0.17)); // 걷기 ↔ 대기 섞는 비율
+        const stride = (cav ? 50 : 34) * sc, rate = Math.max(spd / stride, intent ? (cav ? 2.1 : 1.45) : 0); // 초당 걸음 주기 (실제 이동 거리 기준)
+        const p0 = s.ph; if (s.w > 0.02) s.ph += rate * dt * TAU;
+        if (s.w > 0.45 && Math.floor(s.ph / (cav ? TAU : Math.PI)) !== Math.floor(p0 / (cav ? TAU : Math.PI))) a._foot = (a._foot || 0) + 1; // 발 디딤 → 배경 먼지
+        // 바라보는 방향: 아군은 몸을 돌리듯 짧게 뒤집힘 (적은 항상 왼쪽)
+        const face = foe ? -1 : (a.face < 0 ? -1 : 1);
+        if (!foe) { s.fs = face > s.fs ? Math.min(face, s.fs + dt * 11) : Math.max(face, s.fs - dt * 11); const img = ico.firstElementChild; if (img && img.classList.contains('spr')) img.style.transform = `scaleX(${(Math.sign(s.fs || face) * Math.max(0.12, Math.abs(s.fs))).toFixed(3)})`; }
+        const dir = Math.abs(pvx) > 6 ? Math.sign(pvx) : face, lean = 3.5 * cl(spd / 55, 0, 1);
+        const t = now / 1000, p = mix(idlePose(a, t, fight, cav), walkPose(s.ph, sc, dir, lean, cav), s.w);
+        put(ico, p, el.classList.contains('tank') ? 1.08 : 1);
+      }
+      function prepActor(el, now, t) { // 준비 화면(배치 중)의 캐릭터: 대기 + 내려놓을 때 착지
+        const i = +el.dataset.i, u = i >= 100 ? G.bench[i - 100] : G.units[i], ico = el.querySelector('.ico'); if (!u || !ico) return;
+        let s = PU.get(u); if (!s) { s = { land: 0, fx: u.fx, fy: u.fy }; PU.set(u, s); }
+        if (i < 100 && (s.fx !== u.fx || s.fy !== u.fy)) { if (s.fx != null) s.land = now; s.fx = u.fx; s.fy = u.fy; }
+        if (!ico.classList.contains('mo')) ico.classList.add('mo');
+        const img = ico.firstElementChild; if (img && img.style.transform) img.style.transform = '';
+        let p = idlePose(u, t, false, u.fam === 'Cavalry');
+        const q = (now - s.land) / 420;
+        if (q < 1) { // 착지: 위에서 톡 떨어져 살짝 눌렸다가 복원
+          if (q < 0.38) { const f = q / 0.38; p = { y: -14 * (1 - f * f), r: 0, sx: 0.96, sy: 1.05 }; }
+          else { const f = (q - 0.38) / 0.62, k = Math.sin(f * Math.PI) * (1 - f); p = { y: -2 * Math.sin(f * Math.PI) * (1 - f), r: 0, sx: 1 + 0.12 * k, sy: 1 - 0.14 * k }; }
+        }
+        put(ico, p, 1);
+      }
+      function frame(now) {
+        requestAnimationFrame(frame);
+        const dt = Math.min(0.05, Math.max(0, (now - (last || now)) / 1000)); last = now;
+        if (document.hidden || G.ciPause || (RMQ && RMQ.matches)) return;
+        if (field.classList.contains('hstop')) return; // 타격 정지 순간엔 같이 멈춤
+        if (document.querySelector('.title-screen.show, #lobby.show')) return; // 가려져 있으면 쉼
+        const lay = $('bfLayer'), W = lay ? lay.clientWidth : 0, H = lay ? lay.clientHeight : 0, fight = G.phase === 'fight';
+        if (W) for (const el of lay.children) if (el._a && !el.classList.contains('dead')) bfActor(el, now, dt, W, H, fight);
+        const af = $('allyField'); if (af) { const t = now / 1000; for (const el of af.querySelectorAll('.actor[data-i]')) prepActor(el, now, t); }
+      }
+      requestAnimationFrame(frame);
+      return {};
+    })();
     // ----- 전투 화면 그리기 (캐릭터마다 요소를 유지해서 부드럽게 이동) -----
     const BF_EL = new WeakMap();
     function bfNum(layer, a, v, cls) {
@@ -3539,6 +3870,7 @@
         if (!el || !el.isConnected) {
           el = document.createElement('div'); BF_EL.set(a, el); el._a = a; a._ph = a.hp;
           el.innerHTML = `<div class="hp"><i></i></div><div class="${icoCls(a)}">${icoHtml(a)}</div><div class="bf-st"></div>`; layer.appendChild(el);
+          el.style.left = a.bx + '%'; el.style.top = a.by + '%'; a._dx = null; a._dy = null; // 이후 위치는 MOTION이 매 프레임 부드럽게
         }
         seen.add(el);
         const role = (a.role ? ' ' + a.role : '') + (a.elite ? ' elite' : '') + (a.adv ? ' advfx' : '') + (a.leg ? ' legfx' : '') + (a.boss ? ' boss' : '');
@@ -3550,11 +3882,12 @@
         if (a.fam && el.dataset.fam !== a.fam) el.dataset.fam = a.fam;
         if (a.attackAt && a.attackAt !== a._lastAtk) { a._lastAtk = a.attackAt; if (atkNow) attackFx(layer, a, side); }
         const sc = (0.8 + a.by * 0.004) * (a.big > 0 ? 1.35 : 1);
-        el.style.left = a.bx + '%'; el.style.top = a.by + '%'; el.style.zIndex = 2 + Math.round(a.by);
+        el.style.zIndex = 2 + Math.round(a.by);
         el.style.transform = `translate(-50%,-50%) scale(${sc.toFixed(3)})`;
         el.firstChild.firstChild.style.width = Math.max(0, a.hp / a.maxHp * 100) + '%';
         const stx = side === 'foe' ? (a.stun > 0 ? '💫' : '') : statusIcons(a).replace(/<[^>]+>/g, ''); const stEl = el.lastChild; if (stEl.textContent !== stx) stEl.textContent = stx;
         if (a._ph != null) { const d = a._ph - a.hp; if (d > 0.5 && a.bx <= 100) bfNum(layer, a, d, side === 'foe' ? (d > a.maxHp * 0.15 ? 'big' : '') : 'ally'); else if (d < -1.5) bfNum(layer, a, -d, 'heal'); }
+        if (a.mv) el._mvT = now; // 걸으려는 의도 (MOTION이 걷기 자세를 섞는 데 사용)
         a._ph = a.hp; a.mv = false;
       });
       [...layer.children].forEach(el => { if (el.classList.contains('bf-actor') && !seen.has(el) && !el.classList.contains('dead')) { el.classList.add('dead'); BGW.death(el._a, el.classList.contains('foe')); setTimeout(function rm() { G.ciPause ? setTimeout(rm, 120) : el.remove(); }, 460); } });
@@ -3577,7 +3910,7 @@
       }, 50);
     }
     function tick() {
-      if (G.ciPause) return; // 컷인 연출 중에는 전투 정지
+      if (G.ciPause || G.paused) return; // 컷인 · 메뉴(일시정지) 중에는 전투 정지 // 컷인 연출 중에는 전투 정지
       const dt = 0.1, now = performance.now(), st = themeOf();
       G.enemies.forEach(e => { if (e.boss) e.lh = e.hp; });
       G.units.forEach(u => {
@@ -3703,6 +4036,7 @@
       G.minions.forEach(m => { if (m.hp <= 0 && m.kind === 'clone' && m.owner) m.owner.cloneT = 2; }); // 분신은 2초 후 재소환
       G.minions = G.minions.filter(m => m.hp > 0);
       const before = G.units.length;
+      G.units.forEach(u => { if (u.hp <= 0 && !G.fallen.includes(u)) G.fallen.push(u); }); // 쓰러진 유닛은 웨이브 승리 후 부활
       G.units = G.units.filter(u => u.hp > 0);
       if (G.units.length !== before) renderBoard();
 
@@ -3712,8 +4046,22 @@
       else if (!G.enemies.length) clearWave();
     }
 
+    function reviveFallen() { // 웨이브 승리 시 이번 전투에서 쓰러진 유닛을 모두 되살림 (출전 순서 유지)
+      const fallen = (G.fallen || []).filter(u => !G.units.includes(u)); G.fallen = [];
+      if (!fallen.length) return 0;
+      const all = G.units.concat(fallen), order = (G.waveOrder || []).filter(u => all.includes(u));
+      G.units = order.concat(all.filter(u => !order.includes(u)));
+      fallen.forEach(u => {
+        u.hp = u.maxHp; u.sh = 0; u.rv2 = false; u.rvT = 0; u.stun = 0; u.slow = 0; u.petr = 0; u.charm = 0; u.bn = 0; u.bnS = 0; u.psn = 0; u.fz = 0; u.fear = 0;
+        u.exploded = false; u.ghost = false; u.ghosted = false; u.big = 0; u.cd = 0; u.atkT = null; u.tg = null; u.face = 1;
+        const hm = homeOf(u); u.bx = hm.x; u.by = hm.y;
+      });
+      renderBoard();
+      setTimeout(() => { try { skillVfx(fallen[0], 'heal', fallen); } catch (e) {} }, 300); // 부활 빛기둥
+      return fallen.length;
+    }
     function clearWave() {
-      clearInterval(timer); victoryFx(); BGW.victory(); returnHome();
+      clearInterval(timer); victoryFx(); BGW.victory(); const revived = reviveFallen(); returnHome();
       G.units.forEach(u => { u.atkT = null; u.tg = null; });
       G.minions = G.minions.filter(m => m.persist); // 일반 소환체는 웨이브가 끝나면 사라짐
       const interest = 0; // 이자는 '전술적 이자' 노드로 전투 시작 시 지급
@@ -3725,12 +4073,13 @@
       const sp = 3 + iLv('p_spin'); G.spins += sp;
       if (has('gateRec') && G.wave % 5 === 0) G.baseHp = Math.min(baseMax(), G.baseHp + 20); // 관문 회복
       if (G.stage >= 0 && G.wave >= waveMax()) { stageClear(); return; }
-      const ess = 3 + (G.wave % 5 === 0 ? 4 : 0) + iLv('p_ess'); G.essence += ess; newStock(); // 정수: 웨이브 클리어 보상(보스 웨이브 보너스), 상점 목록 갱신
+      const ess = 3 + (G.wave % 5 === 0 ? 4 : 0) + iLv('p_ess'); G.essence += ess; newStock();
+      ['p_gold', 'p_spin', 'p_ess'].forEach((id, i) => { if (iLv(id) > 0) setTimeout(() => invFire('item', id), 500 + i * 450); }); // 웨이브 보상: 패시브 발동 // 정수: 웨이브 클리어 보상(보스 웨이브 보너스), 상점 목록 갱신
       G.wave += 1;
       G.phase = 'prep';
       G.units.forEach(u => u.hp = u.maxHp);
       startBtn.disabled = false;
-      battleMsg.textContent = `클리어! 💰+${reward}${interest ? '(이자 ' + interest + ')' : ''} 💎+${rb} 🔷+${ess} 🎰+${sp} · 슬롯을 돌리고 다음 웨이브를 시작하세요`;
+      battleMsg.textContent = `클리어! 💰+${reward}${interest ? '(이자 ' + interest + ')' : ''} 💎+${rb} 🔷+${ess} 🎰+${sp}${revived ? ` · 💫 쓰러진 유닛 ${revived}기 부활` : ''} · 슬롯을 돌리고 다음 웨이브를 시작하세요`;
       renderBoard(); updateHud(); renderField();
     }
 
@@ -3743,7 +4092,7 @@
       G.lives -= 1; G.waveSpin = 0;
       G.enemies = []; G.minions = G.minions.filter(m => m.persist);
       G.baseHp = baseMax();
-      const restored = restoreWaveRoster();
+      const restored = restoreWaveRoster(); G.fallen = [];
       if (!restored) G.units.forEach(u => { u.hp = u.maxHp; });
       const n = Math.min(RETRY_MAX, (G.retry && G.retry.wave === G.wave ? G.retry.n : 0) + 1); G.retry = { wave: G.wave, n };
       const sp0 = G.spins, g0 = G.gold; let need = 0;
@@ -3781,7 +4130,7 @@
 
     function resetGame() {
       clearInterval(timer);
-      if (ciEnd) ciEnd(); Object.assign(G, { ciPause: false, ciLast: -1e9, cf: {}, wu: {}, cloverWave: 0, cloverCell: null, kegWave: 0, kegCell: null, jcCol: null, sporeSym: null, manualStop: null, chPot: 0, gpWave: 0, gpGot: 0, mlWave: 0, wcWave: 0, hmWave: 0, cartWave: 0, winStreak: 0, waveWins: 0, lastWinSpin: -1, retry: null, lives: 3, gold: 900 + 50 * hasN('initSupply') + 50 * hasN('supplyWh'), spins: 7, wave: 1, baseHp: baseMax(), nsUsed: false, cbUsed: false, cbSpin: false, lostThisWave: false, regUsed: false, nudgeDisc: false, coreRerolls: hasN('coreReroll') + hasN('coreReroll2'), phase: 'prep', spinning: false, units: [], bench: [], enemies: [], minions: [], runRuby: 0, cores: [], spinCount: 0, draftIdx: 0, waveSpin: 0, freeNext: false, halfNext: false, gtWave: 0, nlWave: 0, blUsed: false, bloodFam: null, lastSym: null, coreRR: 0, essence: 5 + 2 * hasN('emEss'), stock: [], rerolls: 0, items: {} }); newStock();
+      if (ciEnd) ciEnd(); Object.assign(G, { ciPause: false, ciLast: -1e9, cf: {}, wu: {}, cloverWave: 0, cloverCell: null, kegWave: 0, kegCell: null, jcCol: null, sporeSym: null, manualStop: null, chPot: 0, gpWave: 0, gpGot: 0, mlWave: 0, wcWave: 0, hmWave: 0, cartWave: 0, winStreak: 0, waveWins: 0, lastWinSpin: -1, retry: null, fallen: [], waveOrder: [], missStreak: 0, pityHit: false, lives: 3, gold: 900 + 50 * hasN('initSupply') + 50 * hasN('supplyWh'), spins: 7, wave: 1, baseHp: baseMax(), nsUsed: false, cbUsed: false, cbSpin: false, lostThisWave: false, regUsed: false, nudgeDisc: false, coreRerolls: hasN('coreReroll') + hasN('coreReroll2'), phase: 'prep', spinning: false, units: [], bench: [], enemies: [], minions: [], runRuby: 0, cores: [], spinCount: 0, draftIdx: 0, waveSpin: 0, freeNext: false, halfNext: false, gtWave: 0, nlWave: 0, blUsed: false, bloodFam: null, lastSym: null, coreRR: 0, essence: 5 + 2 * hasN('emEss'), stock: [], rerolls: 0, items: {} }); newStock();
       $('resultScreen').classList.remove('show');
       G.grid = Array.from({ length: 9 }, () => weightedRandom()); G.nudge = false; sel = -1;
       cells.forEach(c => c.classList.remove('matched'));
@@ -3789,7 +4138,7 @@
       startBtn.textContent = '다시 시작'; startBtn.hidden = true;
       startBtn.disabled = false;
       battleMsg.textContent = '슬롯으로 유닛을 모으세요. 필드에서 드래그해 자유롭게 배치하세요!';
-      say('슬라이드 바를 아래로 내려 스핀하세요'); BGW.newRun();
+      G.cbSpin = true; say('🍀 첫 스핀은 확정 당첨! 슬라이드 바를 아래로 내려 스핀하세요'); BGW.newRun();
       renderBoard(); updateHud(); renderField();
     }
 
@@ -4320,7 +4669,7 @@
     }
     const nextDraftAt = () => G.draftIdx >= CORE_DRAFT.length ? null : CORE_DRAFT[G.draftIdx] - (G.draftIdx === 0 && has('earlyPick') ? 1 : 0);
     // 코어 발동 기록 → 슬롯 패널 코어 칸에 표시
-    function coreFire(id) { const f = G.cf || (G.cf = {}), o = f[id]; f[id] = { w: G.wave, n: o ? o.n + 1 : 1 }; }
+    function coreFire(id) { const f = G.cf || (G.cf = {}), o = f[id]; f[id] = { w: G.wave, n: o ? o.n + 1 : 1 }; invFire('core', id); }
     function coreState(c) {
       const f = G.cf || {}, x = f[c.id];
       if (['lucky', 'cheap', 'rich'].includes(c.id)) return { label: '상시', on: false, al: true };
@@ -4379,6 +4728,29 @@
       overlay.classList.add('show');
       mainArea.classList.add('dimmed');
     }
+    // ===== 코어·아이템 발동 연출: 칸이 금빛으로 번쩍 + 이름 말풍선이 떠오름 =====
+    const INV_FIRE = {}; // id → 발동 시각
+    function invSlots(kind, id) { return [...document.querySelectorAll(`.inv-slot[data-inv="${kind}"][data-id="${id}"]`)]; }
+    function invFire(kind, id) {
+      const now = performance.now(), k = kind + ':' + id, last = INV_FIRE[k] || 0; INV_FIRE[k] = now;
+      invSlots(kind, id).forEach(s => { s.classList.remove('fire'); void s.offsetWidth; s.style.animationDelay = ''; s.classList.add('fire'); });
+      if (now - last < 450) return; // 연달아 발동하면 말풍선은 한 번만
+      const it = kind === 'core' ? CORES.find(c => c.id === id) : itemById(id); if (!it) return;
+      const slot = invSlots(kind, id).find(s => s.getClientRects().length && s.offsetParent), phone = document.querySelector('.phone'); if (!slot) return;
+      const r = slot.getBoundingClientRect(), pr = phone.getBoundingClientRect();
+      const name = kind === 'core' ? it.n : `${it.icon} ${it.name}`, el = document.createElement('div');
+      el.className = 'inv-pop ' + kind; el.innerHTML = `<b></b><i>발동!</i>`; el.firstChild.textContent = name;
+      el.style.left = Math.min(pr.width - 70, Math.max(70, r.left - pr.left + r.width / 2)) + 'px'; el.style.top = (r.top - pr.top) + 'px';
+      phone.appendChild(el); setTimeout(() => el.remove(), 1500);
+      for (let i = 0; i < 8; i++) { const p = document.createElement('i'); p.className = 'inv-spark'; const a = i / 8 * Math.PI * 2;
+        p.style.left = (r.left - pr.left + r.width / 2) + 'px'; p.style.top = (r.top - pr.top + r.height / 2) + 'px';
+        p.style.setProperty('--sx', Math.cos(a) * 30 + 'px'); p.style.setProperty('--sy', Math.sin(a) * 30 + 'px'); phone.appendChild(p); setTimeout(() => p.remove(), 650); }
+    }
+    function invRefire() { // 칸을 새로 그렸을 때 발동 애니메이션을 끊기지 않게 이어서
+      const now = performance.now();
+      for (const k in INV_FIRE) { const t = now - INV_FIRE[k]; if (t > 900) continue; const [kind, id] = k.split(':');
+        invSlots(kind, id).forEach(s => { if (!s.classList.contains('fire')) { s.style.animationDelay = -t + 'ms'; s.classList.add('fire'); } }); }
+    }
     function renderStatus() {
       try {
         const f = G.cf || {};
@@ -4417,6 +4789,7 @@
         if (elCore && elCore._h !== coreHtml) { elCore._h = coreHtml; elCore.innerHTML = coreHtml; }
         const elItem = $('coreStatus2');
         if (elItem && elItem._h !== itemHtml) { elItem._h = itemHtml; elItem.innerHTML = itemHtml; }
+        invRefire();
       } catch (e) {}
     }
     function renderCoreBar() {}
@@ -4466,7 +4839,7 @@
       $('shopMsg').textContent = ''; renderShop();
       $('shopPanel').classList.add('open'); overlay.classList.add('show'); mainArea.classList.add('dimmed');
     });
-    $('rsLobby').addEventListener('click', () => { $('resultScreen').classList.remove('show'); renderLobby(); $('lobby').classList.add('show'); });
+    $('rsLobby').addEventListener('click', () => { $('resultScreen').classList.remove('show'); lbSel = null; $('lobby').classList.add('show'); renderLobby(); });
 
     function dexAdd(kind, v) { if (!META.dex[kind].includes(v)) { META.dex[kind].push(v); saveMeta(); } }
     function dexHtml() {
@@ -4497,7 +4870,7 @@
     // ========== 상점 / 영구 업그레이드 (💎) ==========
     const SAVE_KEY = 'slotBattleSave_v2';
     const LEGACY_SAVE_KEY = 'slotBattleSave_v1';
-    const META = { ruby: 0, best: 0, clear: {}, unl: {}, tree: {}, dex: { u: [], t: [], s: [], a: [], l: [] }, up: { gold: 0, spin: 0, atk: 0, hp: 0, slot: 0, islot: 0 } };
+    const META = { tut: false, ruby: 0, best: 0, clear: {}, unl: {}, tree: {}, dex: { u: [], t: [], s: [], a: [], l: [] }, up: { gold: 0, spin: 0, atk: 0, hp: 0, slot: 0, islot: 0 } };
     const maxUnits = () => MAX_UNITS + hasN('cmd1') + hasN('cmd2') + hasN('cmd3');
 
     // 영구 업그레이드: 다음 레벨 비용 = cost × (현재 Lv + 1)
@@ -4685,7 +5058,7 @@
       try {
         const d = JSON.parse(localStorage.getItem(SAVE_KEY) || localStorage.getItem(LEGACY_SAVE_KEY) || 'null');
         if (d) {
-          META.ruby = d.ruby | 0; META.best = d.best | 0; META.clear = d.clear || {}; META.unl = d.unl || {}; META.tree = d.tree || {};
+          META.tut = !!d.tut; META.ruby = d.ruby | 0; META.best = d.best | 0; META.clear = d.clear || {}; META.unl = d.unl || {}; META.tree = d.tree || {};
           if (d.dex) META.dex = { u: d.dex.u || [], t: d.dex.t || [], s: d.dex.s || [], a: d.dex.a || [], l: d.dex.l || [] };
           Object.assign(META.up, d.up || {});
           saveMeta();
@@ -4694,7 +5067,7 @@
     }
     function saveMeta() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(META)); } catch (e) {} }
 
-    let treeCat = 'R';
+    let treeCat = 'R', treeGuided = false;
     const nodeDepth = n => n.req.length ? 1 + Math.max(...n.req.map(r => nodeDepth(NODES[r]))) : 0;
     const affordableNodes = () => NODE_ROWS.filter(r => !has(r[0]) && !nodeLock(NODES[r[0]]) && META.ruby >= r[3]).length;
     let treeSel = null;
@@ -4715,6 +5088,7 @@
       return { ns, ids, pos, w: 16 + (maxX + 1) * (TW + TGX), h: top + (maxD + 1) * (TH + TGY) };
     }
     function treeHtml() {
+      if (!has('sigil') && !treeGuided) { treeGuided = true; treeCat = 'O'; treeSel = 'sigil'; } // 첫 구매는 모든 트리의 시작 노드로 안내
       const bought = NODE_ROWS.filter(r => has(r[0])).length;
       const chips = NODE_CATS.map(([c, nm]) => { const rows = NODE_ROWS.filter(r => r[1] === c); return `<button class="dtab${c === treeCat ? ' on' : ''}" data-cat="${c}">${nm} ${rows.filter(r => has(r[0])).length}/${rows.length}</button>`; }).join('');
       const lay = treeLayout(treeCat);
@@ -4726,15 +5100,16 @@
           const f = lay.pos[r], x1 = f.x + TW / 2, y1 = f.y + TH, x2 = q.x + TW / 2, y2 = q.y, m = (y2 - y1) / 2;
           edges += `<path d="M${x1} ${y1} C${x1} ${y1 + m},${x2} ${y2 - m},${x2} ${y2}" fill="none" stroke="${has(r) ? '#7b5cff' : '#3a4366'}" stroke-width="${has(r) ? 2.5 : 2}"/>`;
         });
-        if (ext.length && !n.req.some(r => lay.ids.has(r))) nodes += `<div class="tx" style="left:${q.x}px;top:${q.y - 13}px">↑ ${NODES[ext[0]].name}</div>`;
+        if (ext.length && !n.req.some(r => lay.ids.has(r))) nodes += `<div class="tx" data-goto="${ext[0]}" style="left:${q.x}px;top:${q.y - 13}px">↑ ${NODES[ext[0]].name}</div>`;
         const done = has(n.id), lock = done ? null : nodeLock(n), st = done ? 'done' : lock ? 'lock' : META.ruby >= n.cost ? 'buy' : 'avail';
         nodes += `<div class="tn ${st}${n.id === treeSel ? ' sel' : ''}" data-tn="${n.id}" style="left:${q.x}px;top:${q.y}px"><b>${n.name}${n.inert ? '🚧' : ''}</b><i>${done ? '✔ 완료' : '💎 ' + n.cost}</i></div>`;
       });
       const n = NODES[treeSel], done = has(n.id), lock = done ? null : nodeLock(n);
       const reqTxt = n.req.length ? '선행: ' + n.req.map(r => (has(r) ? '✔' : '') + NODES[r].name).join(', ') : '시작 노드';
       const cond = (n.clear ? ` · ${STAGES[n.clear[0]].n} ${DIFFS[n.clear[1]].n} 클리어` : '') + (n.grp ? ` · ${GROUP_NAME[n.grp[0]]} ${n.grp[1] >= GROUPS[n.grp[0]].filter(x => x !== n.id).length ? '전부' : n.grp[1] + '개'} 구매` : '');
-      const detail = `<div class="shop-row" style="flex-shrink:0"><div class="info">${done ? '✅' : lock ? '🔒' : '🔓'} ${n.name}${n.inert ? ' 🚧' : ''}<small>${n.d}<br>${reqTxt}${cond}${lock ? '<br><b style="color:#fca5a5">' + lock + '</b>' : ''}</small></div><button class="buy" data-node="${n.id}" ${done || lock || META.ruby < n.cost ? 'disabled' : ''}>${done ? '완료' : '💎 ' + n.cost}</button></div>`;
-      return `<div class="shop-row" style="flex-shrink:0"><div class="info">🔮 기원석 업그레이드 트리<small>해금 ${bought}/${NODE_ROWS.length} · 보유 💎 ${META.ruby} · 노드를 탭해 자세히 보고 구매 · 🚧 = 효과 미연결</small></div></div><div style="display:flex;gap:4px;flex-wrap:wrap;flex-shrink:0">${chips}</div>`
+      const detail = `<div class="shop-row" style="flex-shrink:0"><div class="info">${done ? '✅' : lock ? '🔒' : '🔓'} ${n.name}${n.inert ? ' 🚧' : ''}<small>${n.d}<br>${reqTxt}${cond}${lock ? '<br><b style="color:#fca5a5">' + lock + '</b>' : ''}</small></div><div class="node-btns">${lock && n.req.some(r => !has(r)) ? `<button class="buy goto" data-goto="${n.req.find(r => !has(r))}">선행으로 ›</button>` : ''}<button class="buy${done || lock || META.ruby < n.cost ? ' no' : ''}" data-node="${n.id}">${done ? '완료' : '💎 ' + n.cost}</button></div></div>`;
+      return `<div class="shop-row" style="flex-shrink:0"><div class="info">🔮 기원석 업그레이드 트리<small>해금 ${bought}/${NODE_ROWS.length} · 보유 💎 ${META.ruby} · 노드를 탭하면 바로 구매 · 🚧 = 효과 미연결</small></div></div><div style="display:flex;gap:4px;flex-wrap:wrap;flex-shrink:0">${chips}</div>`
+        + (!has('sigil') ? `<div class="shop-row tree-guide"><div class="info">👉 처음이라면 <b>기타 › 봉인 해제 인장</b>(💎1)부터 탭해서 사세요<small>모든 업그레이드 트리가 이 노드에서 시작돼요</small></div><button class="buy goto" data-goto="sigil">이동</button></div>` : '')
         + `<div class="tree-legend"><span class="lg done"></span>완료 <span class="lg buy"></span>구매 가능 <span class="lg avail"></span>해금됨(💎 부족) <span class="lg lock"></span>잠김</div>`
         + `<div class="tree-wrap" id="treeScroll"><div class="tree-in" style="width:${lay.w}px;height:${lay.h}px"><svg width="${lay.w}" height="${lay.h}">${edges}</svg>${nodes}</div></div>` + detail;
     }
@@ -4754,6 +5129,15 @@
         : treeHtml();
     }
 
+    function nodePop(id, text, ok) { // 탭한 노드 위에 결과를 잠깐 띄움
+      const el = document.querySelector(`.tn[data-tn="${id}"]`), box = el && el.parentElement; if (!el || !box) return;
+      el.classList.add(ok ? 'just' : 'nope');
+      const p = document.createElement('div'); p.className = 'tn-pop' + (ok ? ' ok' : ''); p.textContent = text;
+      const cx = el.offsetLeft + el.offsetWidth / 2, w = Math.min(190, box.offsetWidth - 8);
+      p.style.maxWidth = w + 'px'; if (el.offsetTop < 48) { p.classList.add('below'); p.style.top = (el.offsetTop + el.offsetHeight + 6) + 'px'; } else p.style.top = (el.offsetTop - 6) + 'px'; box.appendChild(p);
+      p.style.left = Math.max(4, Math.min(box.offsetWidth - p.offsetWidth - 4, cx - p.offsetWidth / 2)) + 'px';
+      setTimeout(() => p.remove(), 1700);
+    }
     function renderShop() { // 트리 스크롤 위치 유지
       const ts = $('treeScroll'), sv = ts ? [ts.scrollLeft, ts.scrollTop, $('shopList').scrollTop, treeCat] : null;
       renderShopInner();
@@ -4761,9 +5145,20 @@
     }
     $('shopList').addEventListener('click', e => {
       const tn = e.target.closest('[data-tn]');
-      if (tn) { treeSel = tn.dataset.tn; renderShop(); return; }
+      if (tn) { // 노드 탭 = 바로 구매
+        const id = tn.dataset.tn, n = NODES[id], msg = $('shopMsg'); treeSel = id; let pop, ok = false;
+        if (has(id)) { pop = '✔ 이미 해금됨'; msg.textContent = `✔ ${n.name}: 이미 해금했어요`; }
+        else { const lk = nodeLock(n);
+          if (lk) { pop = '🔒 ' + lk; msg.textContent = `🔒 ${n.name}: ${lk}`; }
+          else if (META.ruby < n.cost) { pop = `💎 부족 ${META.ruby}/${n.cost}`; msg.textContent = `💎 기원석이 부족해요 (필요 ${n.cost} · 보유 ${META.ruby}) · 웨이브 클리어 +2, 5웨이브마다 +5, 스테이지 클리어 보너스로 모아요`; }
+          else { META.ruby -= n.cost; META.tree[id] = 1; reapplyAll(); ok = true; pop = `✨ 해금! −💎${n.cost}`; msg.textContent = `✨ ${n.name} 해금! (남은 💎 ${META.ruby})`; } }
+        if (ok) { saveMeta(); updateHud(); renderField(); try { navigator.vibrate && SET.vib && navigator.vibrate(30); } catch (er) {} }
+        renderShop(); nodePop(id, pop, ok); return;
+      }
       const ch = e.target.closest('[data-cat]');
       if (ch) { treeCat = ch.dataset.cat; renderShop(); return; }
+      const gt = e.target.closest('[data-goto]');
+      if (gt) { const id = gt.dataset.goto, row = NODE_ROWS.find(r => r[0] === id); if (row) { treeCat = row[1]; treeSel = id; $('shopMsg').textContent = `${NODES[id].name}(으)로 이동했어요`; renderShop(); } return; }
       const b = e.target.closest('.buy');
       if (!b || b.disabled) return;
       const msg = $('shopMsg');
@@ -4788,8 +5183,10 @@
         G.essence -= ic; if (has('regulars')) G.regUsed = true; G.stock = G.stock.filter(id => id !== it.id);
         msg.textContent = `${it.name} 사용!`;
       } else if (b.dataset.node) {
-        const n = NODES[b.dataset.node];
-        if (!n || has(n.id) || nodeLock(n) || META.ruby < n.cost) return;
+        const n = NODES[b.dataset.node]; if (!n) return;
+        if (has(n.id)) { msg.textContent = `${n.name}: 이미 해금했어요`; return; }
+        const lk = nodeLock(n); if (lk) { msg.textContent = `🔒 ${n.name}: ${lk}`; return; }
+        if (META.ruby < n.cost) { msg.textContent = `💎 기원석이 부족해요 (필요 ${n.cost} · 보유 ${META.ruby}) · 웨이브 클리어 +2, 5웨이브마다 +5, 스테이지 클리어 보너스로 모아요`; return; }
         META.ruby -= n.cost; META.tree[n.id] = 1; msg.textContent = `${n.name} 해금!`;
         reapplyAll();
       }
@@ -4816,11 +5213,220 @@
     });
     $('shopClose').addEventListener('click', closeShop);
     overlay.addEventListener('click', closeShop);
+    // ========== 언어 (영문 번역 레이어) ==========
+    // 게임 코드는 한국어 그대로 두고, 화면에 나오는 글자만 바꿔 줍니다.
+    // 1) 문장 규칙(숫자가 중간에 끼는 문장) → 2) 사전(긴 문구부터) → 3) 남은 수량 단위 정리
+    // 화면이 바뀔 때마다(MutationObserver) 새로 나온 한글만 골라 번역하고, 원문은 기억해 두었다가 한국어로 돌아갈 때 되돌립니다.
+    const I18N = (() => {
+      const HAN = /[가-힣]/, NUM = '(-?\\d+(?:\\.\\d+)?)';
+      const DICT = {"발동!": "Triggered!","메뉴":"Menu","일시정지":"Paused","계속하기":"Resume","처음부터 다시":"Restart stage","스테이지 선택":"Stage Select","메인 메뉴":"Main Menu","나가기":"Leave","이번 판을 그만두고 메인 메뉴로 갈까요?":"Quit this run and go to the main menu?","이번 판을 그만두고 스테이지 선택으로 갈까요?":"Quit this run and go to stage select?","이번 판을 처음부터 다시 시작할까요?":"Restart this stage from the beginning?","지금까지 얻은 💎 기원석과 최고 기록은 그대로 남아요.":"The 💎 Gems and best record you have earned are kept.","전투 중 · 메뉴를 닫으면 이어서 싸워요":"In battle · it continues when you close the menu","SLOT BATTLE에 오신 걸 환영해요!":"Welcome to SLOT BATTLE!","자원 한눈에 보기":"Your resources","슬롯 열기":"Open the slot","레버를 당겨 스핀!":"Pull the lever to spin!","당첨되면 유닛 소환":"A win summons units","원거리 유닛도 뽑기":"Now a ranged unit","비용과 남은 횟수":"Cost and spins left","유닛 2기 준비 완료":"Two units ready","근접 유닛은 앞줄로":"Melee to the front","원거리 유닛은 뒷줄로":"Ranged to the back","완벽한 배치!":"Perfect formation!","전투 시작!":"Start the battle!","자동 전투":"Auto battle","첫 웨이브 승리!":"First wave cleared!","괜찮아요, 다시 해 봐요":"It's okay, try again","흡수 연습용 선물":"A gift for practice","끌어다 겹치면 흡수":"Drop on a unit to absorb","흡수 확인":"Confirm the absorb","흡수 완료!":"Absorbed!","아이템 상점":"The item shop","아이템 사기":"Buy an item","구매 완료!":"Purchased!","상점 닫기":"Close the shop","아이템 칸":"Item slots","준비 완료!":"You're all set!","슬롯머신을 돌려 영웅을 소환하고, 몰려오는 적을 막아내는 게임이에요. 첫 웨이브를 함께 해 볼게요.":"Spin the slot machine to summon heroes and hold off the incoming enemies. Let's play the first wave together.","💰 골드로 슬롯을 돌리고, 🔷 정수로 상점 아이템을 사요. ❤️ 생명과 🛡️ 하트 보호막을 지켜야 하고, 💎 기원석은 영구 강화에 써요.":"💰 Gold pays for spins and 🔷 Essence buys shop items. Protect your ❤️ lives and 🛡️ Heart Shield. 💎 Gems unlock permanent upgrades.","아래의 슬롯 열기 버튼을 눌러 슬롯머신을 꺼내 보세요.":"Tap the Open Slot button below to bring out the slot machine.","오른쪽 슬라이드 바를 아래로 쭉 끌어내리면 릴이 돌아가요. 첫 스핀은 무조건 당첨이에요!":"Drag the slide bar on the right all the way down to spin the reels. Your first spin always wins!","같은 그림 3개가 가로·세로·대각선 한 줄로 맞으면 그 유닛이 소환돼요. 방금 앞에서 싸우는 근접 유닛이 나왔어요!":"Line up 3 of the same symbol in a row, column or diagonal to summon that unit. You just got a melee unit that fights up front!","이번엔 뒤에서 활을 쏘는 원거리 유닛을 뽑아 볼게요. 한 번 더 스핀!":"Let's get a ranged unit that shoots from behind. Spin once more!","스핀할 때마다 비용이 조금씩 오르고 남은 횟수가 줄어요. 웨이브를 이기면 횟수가 다시 채워져요.":"Each spin costs a little more and uses up one of your spins. Winning a wave refills them.","근접 유닛과 원거리 유닛이 모였어요. 오른쪽 위 ✕ 버튼으로 슬롯을 닫고 배치를 해 볼게요.":"You have a melee unit and a ranged unit. Close the slot with the ✕ button at the top right and let's place them.","어라, 자리가 뒤바뀌었네요! 근접 유닛은 앞에서 적을 막아야 해요. 반짝이는 근접 유닛을 끌어서 오른쪽 앞줄 칸에 놓아 주세요.":"Oops, they swapped places! Melee units should hold the line up front. Drag the highlighted melee unit into the front zone on the right.","원거리 유닛은 뒤에서 안전하게 공격하는 게 좋아요. 반짝이는 원거리 유닛을 왼쪽 뒷줄 칸으로 옮겨 주세요.":"Ranged units are safest attacking from behind. Move the highlighted ranged unit into the back zone on the left.","앞줄이 적을 막는 동안 뒷줄이 사거리 밖에서 공격해요. 배치는 준비 단계에서 언제든 다시 바꿀 수 있어요.":"The front line holds the enemy while the back line attacks from range. You can rearrange anytime during the prep phase.","오른쪽의 ☠️ W1 표시를 탭하면 적이 몰려와요.":"Tap the ☠️ W1 marker on the right and the enemies will come.","유닛들이 알아서 싸워요. 적이 왼쪽 끝까지 오면 🛡️ 하트 보호막이 깎여요. 가끔 유닛이 필살기를 써요!":"Your units fight on their own. Enemies that reach the left edge chip away your 🛡️ Heart Shield. Watch for special attacks!","이기면 💰 골드 · 🎰 스핀 · 🔷 정수 · 💎 기원석을 받아요. 쓰러진 유닛도 다시 일어나요.":"Victory brings 💰 gold, 🎰 spins, 🔷 Essence and 💎 Gems. Fallen units get back up, too.","지면 ❤️ 생명 1개를 쓰고 재정비 보급을 받아요. 흡수와 상점으로 전력을 보강한 뒤 다시 도전하세요.":"A loss costs 1 ❤️ life, but you get regroup supplies. Strengthen your army with absorbing and the shop, then try again.","같은 계열 유닛 1기를 선물했어요! 흡수는 유닛 하나를 재료로 써서 다른 유닛을 더 강하게 만드는 기능이에요.":"Here is a free unit of the same family! Absorbing uses one unit as material to make another unit stronger.","선물받은 유닛을 끌어서 반짝이는 근접 유닛 위에 겹쳐 놓아 보세요.":"Drag the gift unit and drop it right on top of the highlighted melee unit.","흡수하면 레벨이 오르고, 재료 유닛의 고유 각인(특수 능력)을 이어받아요. ✅ 흡수하기를 눌러 확정하세요.":"Absorbing raises the level and passes on the material unit's innate imprint (a special ability). Tap ✅ Absorb to confirm.","레벨이 오르고 각인이 생겼어요. 레벨이 오를수록 ★이 늘고, ★2가 되면 전직 루트를 고를 수 있어요. 유닛을 탭하면 자세히 볼 수 있어요.":"Its level went up and it gained an imprint. More levels mean more ★, and at ★2 you choose a class route. Tap a unit to see the details.","이번엔 상점을 써 볼게요. 아래의 상점 버튼을 눌러 주세요.":"Now let's use the shop. Tap the Shop button below.","🔷 정수로 아이템을 사요. 장착하는 패시브 아이템은 전투 내내 효과가 있어요. 보라색 가격 버튼을 눌러 하나 사 보세요.":"🔷 Essence buys items. Passive items stay equipped and work through every battle. Tap a purple price button to buy one.","같은 아이템을 또 사면 레벨이 올라요. 업그레이드 탭에서는 💎 기원석으로 영구 강화를 해금하고, 도감 탭에서는 모은 유닛을 볼 수 있어요.":"Buying the same item again levels it up. The Upgrade tab unlocks permanent upgrades with 💎 Gems, and the Codex tab shows what you have collected.","오른쪽 위 ✕ 버튼으로 상점을 닫아 주세요.":"Close the shop with the ✕ button at the top right.","산 아이템은 여기 아이템 칸에 장착돼요. 칸을 탭하면 효과를 볼 수 있어요. 스핀을 쌓으면 위쪽 코어 칸에 특별한 규칙도 고를 수 있어요.":"Items you buy are equipped in these slots. Tap a slot to see what it does. As your spins add up, you can also pick special rule cores above.","이제 직접 해 보세요. 튜토리얼은 옵션에서 언제든 다시 볼 수 있어요.":"Now try it yourself. You can replay the tutorial from Options anytime.","건너뛰기":"Skip","튜토리얼 다시 보기":"Replay tutorial","지금 판을 끝내고 시작할까요? 한 번 더 누르세요":"End this run and start? Tap again","단축키 T":"Shortcut: T","튜토리얼 종료":"Tutorial ended","앞줄 (근접)":"Front (melee)","뒷줄 (원거리)":"Back (ranged)","지금은 빈 땅에 놓아 자리만 옮겨 볼게요":"Just drop it on open ground for now","웨이브당 사용 횟수가 있는 코어 1개(금니·양분 잎·마녀의 횃불·검은 악보 중 먼저 장착한 것)에 웨이브당 +1회 추가 사용 부여":"Grants +1 extra use per wave to one per-wave core (whichever of Gold Tooth · Nutrient Leaf · Witch's Torch · Black Score was equipped first)","배경음악·효과음·언어는 설정만 저장되고, 기능은 다음 업데이트에서 연결됩니다. 진동·화면 흔들림은 바로 적용됩니다.":"Music, SFX and language are saved as settings only; they'll be connected in a future update. Vibration and screen shake apply right away.","당첨 시 100 골드 적립(최대 300 골드), 전투 시작 시 획득 (미당첨 스핀 시 몰수)":"On a win, bank 100 gold (max 300 gold), collected at battle start (forfeited on a losing spin)","폭파 시 함께 터뜨릴 심볼 1종을 추가로 선택 (남은 칸 중 가장 많은 심볼 자동 선택)":"When blasting, also blast 1 extra symbol type (auto-picks the most common remaining symbol)","각 웨이브 첫 당첨 시 당첨 라인 밖 심볼을 1회 다시 굴림 (조커·프리즘 심볼 유지)":"On each wave's first win, re-roll the symbols outside the winning lines once (Joker/Prism symbols stay)","매 웨이브 무작위 1칸에 화약통 배치, 해당 심볼 3개 이상 시 충전량 소모 없이 폭파":"Each wave, a Powder Keg is placed on 1 random cell; 3+ of that symbol blast without using charge","잠금 안 된 나머지 유닛을 낮은 등급 순으로 전부 흡수 · 각인은 바뀌지 않고 레벨만":"Absorb every other unlocked unit, lowest grade first · imprints stay, levels only","스핀의 첫 당첨 때 당첨 심볼이 사라지고 새 심볼이 떨어져, 한 번 더 줄을 노립니다":"On a spin's first win, the winning symbols vanish and new ones drop in for another shot at a line","매 웨이브 무작위 1칸에 클로버 생성, 해당 칸 포함 당첨 시 유닛 2마리 추가 소환":"Each wave, a clover appears on 1 random cell; wins that include it summon 2 extra units","폭파 후 빈칸을 아래쪽에서 채우며 기존 심볼들이 위로 밀려 올라감 (연쇄 최대 3회)":"After a blast, empty cells refill from below and existing symbols are pushed up (up to 3 chains)","승급! 전직 루트를 고르세요 (변경 불가) · ★3에서 최종 클래스로 자동 진화해요":"Promoted! Choose a class route (permanent) · it auto-evolves into its final class at ★3","상점에서 패시브 아이템을 사면 이 칸에 장착됩니다. 전투 중 상시 효과가 적용돼요.":"Passive items bought in the shop are equipped here. Their effects stay active during battle.","넛지로 보드 밖으로 밀어낸 기본 심볼당 50 골드 (웨이브당 최대 100 골드)":"50 gold per basic symbol nudged off the board (max 100 gold per wave)","각 칸 조커 등장 확률 +2%, 조커 포함 당첨 시 해당 유닛 1마리 추가 소환":"+2% Joker chance per cell; wins with a Joker summon 1 extra of that unit","전투 중에는 슬롯을 돌릴 수 없어요. 웨이브가 끝난 뒤 준비 단계에서 돌리세요":"You can't spin during battle. Spin in the prep phase after the wave ends","당첨 실패 시, 1칸 이동으로 당첨이 보장되면 릴 하나를 자동으로 1칸 이동":"On a miss, if moving one reel by 1 cell guarantees a win, that reel moves automatically","보드에 같은 심볼이 5개 이상 있을 때 모두 폭파하여 해당 유닛 2마리 소환":"When 5+ of the same symbol are on the board, blast them all and summon 2 of that unit","보호막이 처음 피해를 입은 뒤 다음 스핀이 반드시 당첨됩니다. 런당 1회.":"After your shield first takes damage, your next spin is a guaranteed win. Once per run.","화면은 준비 중이에요. 선택은 저장되고, 번역이 추가되면 바로 적용됩니다.":"screen is in progress. Your choice is saved and will apply once the translation is added.","웨이브의 첫 스핀에 ⭐ Special(광대) 심볼이 반드시 하나 나옵니다":"The first spin of each wave always shows one ⭐ Special (Jester) symbol","당첨 실패 시 슬롯 격자의 2x2 구역 하나를 시계 방향으로 90도 회전":"On a miss, rotate one 2x2 area of the slot grid 90° clockwise","웨이브 클리어 +2, 5웨이브마다 +5, 스테이지 클리어 보너스로 모아요":"Earn them: +2 per wave clear, +5 every 5 waves, plus stage clear bonuses","흡수 모드 ON · 희생 유닛을 대상 유닛 위로 드래그 (또는 탭→탭)":"Absorb mode ON · drag the sacrifice onto the target unit (or tap → tap)","공격 시 18% 확률로 대상을 살짝 밀쳐냄 (LV5: 멀리 날려 보냄)":"18% chance on attack to push the target back slightly (LV5: knocks it far away)","조커 포함 당첨 시 유닛 1마리의 등급을 2번 굴려 더 높은 결과 적용":"On a win with a Joker, roll one unit's grade twice and keep the higher result","전투 시작 시 보유 골드 100당 10골드, 최대 50골드를 얻습니다.":"At battle start, gain 10 gold per 100 gold you hold, up to 50 gold.","실패 후 한 릴의 맨 위와 맨 아래가 같으면 가운데를 그 심볼로 변경":"After a miss, if a reel's top and bottom match, its middle becomes that symbol","해당 웨이브의 다음 스핀에서 각 슬롯이 방금 폭파한 심볼을 띄울 확률":"Chance for each cell to show the just-blasted symbol on the next spin of that wave:","흡수 모드 ON · 후방 대기 유닛을 강화할 유닛 위로 드래그하세요":"Absorb mode ON · drag a reserve unit onto the unit you want to power up","회 달성 · 하나를 무료로 고르세요. 효과는 이번 판 내내 유지돼요":" spins reached · pick one for free. It lasts for the whole run","의 배수(심판·보스) 웨이브를 클리어하면 하트 보호막 +20 회복.":"-multiple waves (Judgment/Boss): clearing one restores +20 Heart Shield.","운명의 망치: 릴을 탭해서 각각 멈추세요! (3초 후 자동 정지)":"Hammer of Fate: tap each reel to stop it! (auto-stops after 3s)","이 후방 대기 중입니다. 필드에서 유닛 위로 드래그해 흡수하세요.":" is waiting in reserve. Drag it onto a unit on the field to absorb it.","자유 배치 · 오른쪽=전방 · 유닛(대기 포함) 위에 놓으면 흡수":"Free placement · right = front · drop onto a unit (incl. reserve) to absorb","슬롯으로 유닛을 모으세요. 필드에서 드래그해 자유롭게 배치하세요!":"Gather units with the slot. Drag them anywhere on the field!","첫 흡수 뒤 다음 스핀에 제물 계열 심볼 3개가 한 줄로 나옵니다":"After your first absorb, the next spin lines up 3 symbols of the sacrifice's family","블라스트로 새 당첨이 생기지 않으면 다음 스핀 비용 -50 골드.":"If a blast makes no new win, your next spin costs 50 gold less.","업그레이드 트리 \"기타\"의 도감 노드(💎3)를 구매하면 열립니다":"Unlocked by buying the Codex node (💎3) under \"Misc\" in the Upgrade Tree","업그레이드 트리에서 기원석(💎)을 써서 영구 강화를 해금하세요":"Spend Gems (💎) in the Upgrade Tree to unlock permanent upgrades","초 동안 적의 영혼을 분리 (영혼에 가한 피해가 본체에도 전달)":"s, the enemy's soul splits off (damage dealt to the soul also hits the body)","출전 자리가 가득 찼어요 (필드 유닛 위로 드래그해 흡수하세요)":"Deploy slots are full (drag onto a field unit to absorb)","런 전에 확률 업 코어 1개를 고릅니다. 훨씬 자주 등장합니다.":"Pick 1 rate-up core before a run. It appears much more often.","런 시작 전 기계 선택 화면에서 운명의 돌 1개를 구매합니다.":"Buy 1 Fate Stone on the machine select screen before a run.","넛지로 새 당첨이 생기지 않으면 다음 스핀 비용 -50 골드.":"If a nudge makes no new win, your next spin costs 50 gold less.","끝없는 웨이브 · 5웨이브마다 보스 · 스테이지가 계속 바뀜":"Endless waves · boss every 5 waves · the stage keeps changing","첫 스핀은 확정 당첨! 슬라이드 바를 아래로 내려 스핀하세요":"Your first spin is a guaranteed win! Pull the slide bar down to spin","매 스핀마다 무작위 릴 1개의 넛지 유입 심볼이 조커로 변경":"Every spin, the incoming nudge symbol of 1 random reel becomes a Joker","한 번에 4개 이상의 같은 심볼을 폭파하면 150 골드 획득":"Blast 4+ of the same symbol at once to gain 150 gold","유닛 슬롯 가득! 흡수해서 자리를 비워야 스핀할 수 있어요":"Unit slots full! Absorb to make room before you can spin","매칭 없음 · 칸을 탭하면 그 열이 한 칸 내려가요 (넛지":"No match · tap a cell to drop its column one step (nudge","이(가) 이미 최대(LV5)라 각인은 그대로 · 대신 유닛":" is already at max (LV5), so the imprint stays · instead unit","직전에 당첨된 심볼이 다시 당첨되면 유닛 1기를 추가 소환":"If the symbol that just won wins again, summon 1 extra unit","웨이브 첫 스핀이 실패하면 마지막 릴이 첫 릴 배치를 복사":"If a wave's first spin misses, the last reel copies the first reel","스핀 도중 3개 릴을 각각 수동으로 정지 가능 (릴을 탭)":"Stop each of the 3 reels by hand while spinning (tap a reel)","카드에 미풍의 돌 등장. 고급을 건너뛰고 희귀를 노립니다.":"card gets the Breeze Stone. Skips Advanced to aim for Rare.","런마다 한 번, 상점 아이템 1개가 정수 1 저렴해집니다.":"Once per run, one shop item costs 1 less Essence.","긴급 지원: 유닛이 없어 무료 확정 스핀 1회를 드려요!":"Emergency aid: you have no units, so here's 1 free guaranteed spin!","이중 장부: 당첨 심볼이 사라지고 새 심볼이 떨어집니다!":"Double Ledger: the winning symbols vanish and new ones drop in!","넛지 때 새 심볼 대신 밀려난 심볼이 반대쪽 끝으로 순환":"On a nudge, the pushed-out symbol cycles to the other end instead of a new one","당첨된 심볼이 보드에 4개 이상이면 유닛 1기 추가 소환":"If the winning symbol has 4+ on the board, summon 1 extra unit","넛지로 새 당첨 라인이 생기면 넛지 횟수를 소모하지 않음":"A nudge that creates a new winning line doesn't use up a nudge","카드에 예감의 돌 등장. 후보 3개 중 1개를 고릅니다.":"card gets the Omen Stone. Pick 1 of 3 candidates.","성 전직 시 서로 다른 특성의 후보 3개 중 1개 선택.":"★ promotion: choose 1 of 3 candidates with different traits.","진열 상품을 새로 고칩니다 (정수는 이번 판에만 쓰여요)":"Refresh the stock (Essence is only usable this run)","명까지 추종자로 (보스 추종자는 다음 보스전까지 유지)":" as followers (boss followers stay until the next boss fight)","웨이브 첫 스핀이 실패하면 그 스핀을 1회 무료로 다시":"If a wave's first spin misses, redo that spin once for free","당첨 실패 스핀 후, 심볼 1개를 정중앙 심볼과 맞바꿈":"After a losing spin, swap 1 symbol with the center symbol","출전 공간이 가득 찼습니다 · 먼저 유닛을 흡수하세요":"Deploy space is full · absorb a unit first","출전 유닛이 없어요. 예비 유닛을 필드로 드래그하세요":"No units deployed. Drag a reserve unit onto the field","두 번째 코어 선택지에도 희귀 이상 코어 1개 보장.":"Your second core pick also guarantees 1 Rare+ core.","리롤하거나 다음 웨이브 클리어 후 새 상품이 들어와요":"New stock arrives when you reroll or after the next wave clear","긴급 지원: 슬롯을 열어 무료 확정 스핀을 돌리세요":"Emergency aid: open the slot for a free guaranteed spin","남은 횟수가 없어요. 웨이브를 클리어하면 충전됩니다":"No uses left. They recharge when you clear a wave","반동 축: 방금 넛지한 릴만 다시 넛지할 수 있어요":"Rebound Axle: only the reel you just nudged can be nudged again","흡수한 뒤 다음 스핀 비용이 절반 (웨이브당 1회)":"After absorbing, your next spin costs half (once per wave)","매 6번째 스핀에 ⭐ Special 심볼 1개 확정":"Every 6th spin guarantees 1 ⭐ Special symbol","넛지 뒤 방금 넛지한 같은 릴을 1회 더 넛지 가능":"After a nudge, you can nudge that same reel once more","카드에 특수의 돌 등장. 15% 확률로 특수 유닛.":"card gets the Special Stone. 15% chance of a Special unit.","카드에 숙련의 돌 등장. 유닛이 ★2로 도착합니다.":"card gets the Mastery Stone. Units arrive at ★2.","웨이브 중 보호막 피해를 처음 한 번 막아 줍니다.":" waves: blocks the first shield damage once.","유닛 각성 해금 (흡수 Lv 30 이상 유닛 능력치":"Unlocks unit Awakening (units at absorb Lv 30+ get stats","메아리 등불: 같은 심볼이 다시 당첨! 추가 소환":"Echo Lantern: the same symbol won again! Bonus summon","상승 깃털: 폭파 후 심볼이 위로 밀려 올라갑니다":"Updraft Feather: symbols get pushed up after the blast","사기꾼의 큐브: 2x2 구역을 시계 방향으로 회전":"Trickster's Cube: rotated a 2x2 area clockwise","공격 시 10% 확률로 운석: 주변 최대 3명에게":"10% chance on attack to call a meteor: up to 3 nearby enemies take","카드에 균열의 돌 등장. 일반 또는 전설/프리즘.":"card gets the Rift Stone. Common or Legendary/Prism.","카드에 도박의 돌 등장. 고급 또는 전설/프리즘.":"card gets the Gambit Stone. Advanced or Legendary/Prism.","매 런을 원정 코어 \"용병 계약\"으로 시작합니다.":"Start every run with the expedition core \"Mercenary Contract\".","노드를 탭하면 바로 구매 · 🚧 = 효과 미연결":"Tap a node to buy it instantly · 🚧 = effect not connected yet","와일드카드: 조커 당첨! 유닛 1마리 추가 소환":"Wildcard: Joker win! 1 extra unit summoned","포자 버섯: 방금 폭파한 심볼이 다시 올라옵니다":"Spore Mushroom: the just-blasted symbol comes back up","공격 시 25% 확률로 다른 적에게 50% 피해":"25% chance on attack to deal 50% damage to another enemy","스핀 실패 때 같은 심볼이 4개 이상이면 에센스":"On a miss with 4+ of the same symbol, Essence","매 5번째 스핀의 당첨 유닛 등급이 1단계 상승":"The winning unit on every 5th spin goes up 1 grade","기지가 피해를 입는 웨이브마다 첫 피격 시 골드":"Each wave your base takes damage, the first hit grants gold","아이템 삭제 환급률이 50%에서 80%로 증가.":"Item removal refund rate rises from 50% to 80%.","게임 오버 상태예요. 다시 시작한 뒤 사용하세요":"It's game over. Restart before using this","조커의 미소: 등급을 2번 굴려 높은 쪽 적용":"Joker's Grin: grade rolled twice, higher one kept","캠페인 완료(6스테이지 Easy 클리어) 필요":"Requires campaign completion (all 6 stages cleared on Easy)","카드에 쌍둥이 돌 등장. 유닛 2기를 줍니다.":"card gets the Twin Stone. Gives 2 units.","카드에 별자리 돌 등장. 유닛 3기를 줍니다.":"card gets the Constellation Stone. Gives 3 units.","런마다 코어 선택지를 1번 무료로 리롤합니다.":"Reroll the core choices once for free each run.","첫 코어 선택지에 희귀 이상 코어 1개 보장.":"Your first core pick guarantees 1 Rare+ core.","마녀의 횃불: 당첨 밖 심볼을 다시 굴립니다":"Witch's Torch: re-rolling the non-winning symbols","유닛이 없어요. 슬롯을 돌려 먼저 소환하세요":"No units. Spin the slot to summon some first","재정비! 슬롯·상점·배치로 전력을 보강하세요":"Regroup! Strengthen your army with the slot, shop and placement","용병 계약을 한 번 더 사용할 수 있습니다.":"Mercenary Contract can be used one more time.","모든 업그레이드 트리가 이 노드에서 시작돼요":"Every upgrade tree starts from this node","뒤틀린 종: 다음 스핀 무료 (횟수 환급)":"Twisted Bell: next spin is free (spin refunded)","굽은 송곳니: 심볼 하나를 정중앙과 맞바꿈":"Crooked Fang: swapped a symbol with the center","배치 완료! (오른쪽=전방 / 왼쪽=후방)":"Placed! (right = front / left = back)","초간 거대화 (받는 피해 -25%, 공격력":"s Enlarge (damage taken -25%, ATK","카드에 성소의 돌 등장. 희귀 이상 보장.":"card gets the Sanctum Stone. Rare+ guaranteed.","웨이브 시작 때의 유닛이 모두 복원됐어요":"All units from the start of the wave were restored","피해 (최대 체력이 높을수록 범위 증가)":" damage (bigger area with higher max HP)","사망 시 폭발: 주변 적에게 최대 체력의":"On death, explode: nearby enemies take","적중 시 피해가 가장 가까운 다른 적에게":"On hit, damage chains to the nearest other enemy","웨이브 첫 공격이 즉시 발동, 피해 2배":"First attack each wave fires instantly with 2× damage","웨이브 시작 시 최대 HP 25% 보호막":"Shield of 25% max HP at wave start","상점에서 정수(🔷)로 구매 · 장착 칸":"Buy with Essence (🔷) in the shop · equip slots","스핀을 쌓으면 코어를 고를 수 있습니다.":"Spins add up to core picks.","웨이브의 마지막 스핀 비용 -50 골드.":"The last spin of each wave costs 50 gold less.","유닛이 이 특성을 얻을 수 있게 됩니다.":"Units can gain this trait.","이 아이템이 상점에 등장할 수 있습니다.":"This item can appear in the shop.","코어 선택지를 1번 더 무료 리롤합니다.":"One more free core reroll.","이 코어가 선택지에 등장할 수 있습니다.":"This core can appear in your choices.","블라스트 카트: 4개 이상 폭파! 골드":"Blast Cart: 4+ blasted! Gold","각인은 지금 그대로 유지 · 대신 유닛":"Imprints stay as they are · instead unit","역전 레버: 다음 스핀은 반드시 당첨!":"Comeback Lever: your next spin is a guaranteed win!","슬롯을 돌리고 다음 웨이브를 시작하세요":"Spin the slot and start the next wave","기본 공격 후 다음 기본 공격의 공격력":"After a basic attack, the next basic attack gets ATK","번째 기본 공격마다 같은 대상에 공격력":"Every 3rd basic attack hits the same target again for ATK","공격 시 입힌 피해의 30%가 다른 적":"30% of damage dealt on attack transfers to other enemies:","적중 시 대상의 공격 속도와 이동 속도":"On hit, the target's attack and move speed","함께 싸우는 분신 소환 (본체 능력치의":"Summons a clone that fights alongside (of the original's stats","존재 효과: 모든 적에게 초당 공격력의":"Aura: all enemies take damage per second equal to ATK ×","웨이브의 첫 당첨 뒤 다음 스핀이 무료":"After each wave's first win, the next spin is free","맨 아랫줄 칸을 탭하면 릴을 위로 넛지":"Tap a bottom-row cell to nudge that reel up","돌 진열대에 등급 무관 돌 1개 추가.":"Adds 1 stone of any grade to the Stone Stand.","피격 시 얻는 골드가 150으로 증가.":"Gold gained when hit rises to 150.","새로운 블라스트 슬롯머신을 해금합니다.":"Unlocks the new Blast slot machine.","탐욕의 성배: 미당첨으로 적립금 몰수":"Chalice of Greed: no win, savings forfeited","넛지 실패… (넛지 숙련: 다음 스핀":"Nudge failed… (Nudge Mastery: next spin","후방 대기 유닛 출전 및 배치 완료!":"Reserve unit deployed and placed!","초보자 방패가 하트 보호막을 지켰어요":"Novice Shield protected your Heart Shield","전원 전멸! 보호막이 빠르게 깎입니다":"All units down! Your shield is draining fast","적 처치 후 다음 기본 공격의 공격력":"After a kill, the next basic attack gets ATK","초간 중독 (0.5초마다 최대 체력의":"s Poison (every 0.5s, max HP ×","소환 시 적을 밀쳐내 0.8초 기절)":"on summon, knocks enemies back and stuns them for 0.8s)","공격 시 화상 (3초간 초당 ATK의":"Burn on attack (for 3s, per second ATK ×","받은 피해의 30%를 공격자에게 반사":"Reflects 30% of damage taken back to the attacker","없음 (다른 유닛을 흡수하면 얻어요)":"None (gained by absorbing other units)","선택 즉시 고급 이상 유닛 1기 소환":"Instantly summon 1 Advanced+ unit on pick","런마다 돌 퀘스트 1개를 리롤합니다.":"Reroll 1 stone quest each run.","슬라이드 바를 아래로 내려 스핀하세요":"Pull the slide bar down to spin","네잎클로버: 클로버 칸 당첨! 유닛":"Four-Leaf Clover: clover cell won! Units","개도 함께 폭파! 유닛 1마리 소환":" also blasted! 1 unit summoned","줄이 확정으로 맞아 유닛이 소환돼요":"A line is guaranteed, so units get summoned","상점에서 아이템 구매·리롤에 쓰세요":"Use it to buy and reroll items in the shop","공격 시 12% 확률로 모든 적에게":"12% chance on attack to hit all enemies for","스핀할 때 각 칸이 1.5% 확률로":"On each spin, every cell has a 1.5% chance of","슬롯을 돌릴 때 발동하는 규칙입니다":"Rules that trigger when you spin the slot","프리즘 유닛이 등장하기 시작합니다.":"Prism units start appearing.","프리즘 유닛 등장 확률 추가 증가.":"Prism unit chance increased further.","확률 업 코어를 1개 더 고릅니다.":"Pick 1 more rate-up core.","전투 중에는 슬롯을 열 수 없어요":"You can't open the slot during battle","공명 모루: 유닛 1기 추가 소환":"Resonant Anvil: 1 extra unit summoned","흡수하기 · 새 각인 없이 레벨만":"Absorb · levels only, no new imprint","아군 배치 영역 안에 놓아주세요.":"Drop it inside your deployment area.","마법 방어: 적이 받는 피해 감소":"Magic ward: enemies take less damage","확률로 3초간 대상 축소 (공격력":" chance to shrink the target for 3s (ATK","초 띄우고, 착지 시 주변 적에게":"s, landing deals damage to nearby enemies:","잠그면 흡수 재료로 쓰이지 않아요":"Locked units won't be used as absorb material","이번 판 코어 선택은 끝났습니다.":"Core picks for this run are done.","고급 유닛이 등장하기 시작합니다.":"Advanced units start appearing.","고급 유닛 등장 확률 추가 증가.":"Advanced unit chance increased further.","희귀 유닛이 등장하기 시작합니다.":"Rare units start appearing.","희귀 유닛 등장 확률 추가 증가.":"Rare unit chance increased further.","전설 유닛이 등장하기 시작합니다.":"Legendary units start appearing.","전설 유닛 등장 확률 추가 증가.":"Legendary unit chance increased further.","진영 시너지 시스템을 해금합니다.":"Unlocks the faction synergy system.","광대의 촛불: 조커가 유입됩니다":"Jester's Candle: a Joker slides in","탐욕의 진주: 밀어낸 심볼 골드":"Greedy Pearl: gold for pushed symbols","잠긴 유닛은 희생시킬 수 없어요":"Locked units can't be sacrificed","웨이브마다 1회, 쓰러지면 체력":"Once per wave, when downed, revive with HP","잃은 체력 비율만큼 공격력 최대":"ATK up by the ratio of HP lost, up to","루트를 선택하세요 (변경 불가)":"Choose a route (permanent)","흡수 Lv 30 이상 · 능력치":"Absorb Lv 30+ · stats","운명의 돌 시스템을 해금합니다.":"Unlocks the Fate Stone system.","첫 코어 선택에 필요한 스핀 수":"Spins needed for the first core pick","희생 유닛의 특성을 선택하세요.":"Choose a trait from the sacrificed unit.","하트 보호막 · 0이 되면 생명":"Heart Shield · at 0 you lose a life,","복사 모자: 가운데 심볼 변경":"Copy Cap: middle symbol changed","쌍둥이 체리: 마지막 릴 복사":"Twin Cherries: last reel copied","전투 중에는 흡수할 수 없어요":"You can't absorb during battle","드래그해서 자유롭게 배치하세요":"to place them freely","아군이 지속 화염 피해를 받음":"Allies take constant fire damage","체력·공격력 감소 · 또 지면":"HP·ATK reduced · if you lose again","생명(❤️)을 모두 잃었습니다":"You lost all your lives (❤️)","체력 30% 이하 적에게 피해":"Damage to enemies at or below 30% HP","스핀 실패 후 다음 스핀 비용":"After a miss, next spin cost","장착 칸을 차지하는 상시 효과":"Always-on effect that takes an equip slot","업그레이드의 봉인이 풀립니다.":"The upgrades are unsealed.","프리즘 유닛 등장 확률 증가.":"Prism unit chance increased.","슬롯을 돌려 영웅을 소환하라!":"Spin the slots, summon your heroes!","골드 (전투 시작 시 획득)":"gold (collected at battle start)","개 폭파! 충전량 소모 없음":" blasted! No charge used","황금 문장: 넛지 횟수 유지":"Golden Crest: nudge not used up","위치를 바꿀 유닛을 탭하세요":"Tap the unit to swap places with","은(는) 사라지고, 새 각인":" disappears, and the new imprint","체력·공격력 감소 (최대치)":"HP·ATK reduced (max)","공격 시 18% 확률로 대상":"18% chance on attack to stun the target for","공격 시 16% 확률로 대상":"16% chance on attack to blind the target for","적중 시 12% 확률로 적을":"12% chance on hit to launch the enemy for","존재 효과: 모든 적 공격력":"Aura: all enemies ATK","의 영혼 상태로 전투에 남음":" as a soul and stays in battle","공격 시 피해의 30% 회복":"Heal 30% of the damage dealt on attack","흡수 Lv 30 필요 (현재":"Requires absorb Lv 30 (now","고급 유닛 등장 확률 증가.":"Advanced unit chance increased.","희귀 유닛 등장 확률 증가.":"Rare unit chance increased.","전설 유닛 등장 확률 증가.":"Legendary unit chance increased.","무한 모드에서 빨리감기 최대":"Endless mode fast-forward up to","적이 아군을 무작위로 노림":"Enemies target allies at random","가 삼킨 아군을 내던졌다!":" spat out the ally it swallowed!","에서 생명을 모두 잃었어요":": all lives lost","기본 공격이 뒤쪽 적 최대":"Basic attacks pierce up to","초 동안 공포에 질려 도망":"s, flees in fear","초당 최대 HP 2% 회복":"Regenerate 2% max HP per second","아군 전체 즉시 공격 준비":"All allies instantly ready to attack","더 이상 강화할 수 없어요":"Can't power up any further","웨이브를 이길 때마다 골드":"Gold for every wave won:","언데드 진영을 해금합니다.":"Unlocks the Undead faction.","랜덤 유닛 1기 즉시 소환":"Instantly summon 1 random unit","은(는) LV1부터 시작":" starts from LV1","수는 적지만 매우 단단함":"Few in number but very tough","지쳤다! 받는 피해 증가":" is exhausted! Takes more damage","회를 돌릴 만큼 채워 줌":" spins' worth topped up","초 실명 (공격 빗나감)":"s Blind (attacks miss)","연속 공격마다 공격 속도":"Each consecutive attack: attack speed","처치되면 2초 후 재소환":"respawns 2s after being defeated","비전 진영을 해금합니다.":"Unlocks the Arcane faction.","심연 진영을 해금합니다.":"Unlocks the Abyss faction.","천상 진영을 해금합니다.":"Unlocks the Celestial faction.","기타 › 봉인 해제 인장":"Misc › Unsealing Sigil","기원석이 부족해요 (필요":"Not enough Gems (need","이번 판의 규칙을 바꿔요":"Changes the rules for this run","다음 스핀 확정 당첨!":"Next spin is a guaranteed win!","번 릴을 한 칸 이동!":" reel shifted one step!","아무것도 바뀌지 않아요":"Nothing changes","대기 유닛 출전 완료!":"Reserve unit deployed!","유닛을 이 넓은 영역에":"Drag units anywhere in this area","빠른 적이 떼로 몰려옴":"Fast enemies swarm in","양쪽 수가 같아 취약!":"Even numbers on both sides — vulnerable!","다음 스핀 반드시 당첨":"Next spin is a guaranteed win","공격 시 25% 확률로":"25% chance on attack:","피격 시 15% 확률로":"15% chance when hit:","이하인 적을 즉시 처치":"or less HP: instantly defeated","물어뜯어라, 늑대들아!":"Tear them apart, wolves!","쏘아봐라, 되돌려주지.":"Go on, shoot. I'll send it back.","별빛이 우리를 지킨다.":"Starlight protects us.","에서 A/B 루트 선택":": choose route A/B","업그레이드 (구매 가능":"Upgrades (available","블라스트 슬롯머신 해금":"Unlock Blast Machine","보호막이 이미 가득해요":"Shield is already full","기원석 업그레이드 트리":"Gem Upgrade Tree","새 각인은 받지 않기":"Skip the new imprint","회분 이상이라 그대로":" spins or more, unchanged","확률로 방어 (무효)":" chance to block an attack (negated)","초 동안 시간을 멈춤":"s, time stops","사망 시 공격력·체력":"On death, remains in battle with ATK·HP","모래와 함께 베여라.":"Be cut down with the sand.","비늘의 비를 받아라.":"Take this rain of scales.","공포에 무릎 꿇어라.":"Kneel before terror.","유닛 1기 즉시 소환":"Instantly summon 1 unit","상품을 새로 고쳤어요":"Stock refreshed","탐욕의 성배: 적립":"Chalice of Greed: banked","에코 거울: 에센스":"Echo Mirror: Essence","고대 유적의 지배자":"Ruler of the Ancient Ruins","적이 공격을 회피함":"Enemies dodge attacks","분노! 마법탄 강화":"Enraged! Magic bolts empowered","피해 + 1초 기절":" damage + 1s stun","를 지닌 거신 소환":" — summons a Colossus","가자, 전원 돌격!":"Let's go, everyone charge!","보이는구나, 네놈.":"I see you.","네 피는 달콤하군.":"Your blood is sweet.","내 노래를 들어라…":"Hear my song…","시간이여, 멈춰라.":"Time, stand still.","각성 완료 (능력치":"Awakened (stats","웨이브 클리어 골드":"Wave clear gold","스핀 누적으로 선택":"picked as spins add up","도감을 해금합니다.":"Unlocks the Codex.","보드가 가득 찼어요":"The board is full","웨이브 클리어 스핀":"Wave clear spins","웨이브 클리어 정수":"Wave clear Essence","부터 탭해서 사세요":" first — tap to buy it","해금됨(💎 부족)":"Unlocked (💎 short)","장착 칸이 부족해요":"Not enough equip slots","전설 유닛 소환!":"Legendary unit summoned!","유닛 1마리 소환":"1 unit summoned","흡수를 취소했어요":"Absorb canceled","흡수하기 · 각인":"Absorb · imprint","고대 숲의 수호자":"Guardian of the Ancient Forest","심연의 거대 벌레":"Giant Worm of the Abyss","독 웅덩이·삼키기":"Poison Pool · Swallow","생명 -1 (남은":"Life -1 (left:","회 보장 · 지금":" guaranteed · now","처치한 적을 최대":"Turns up to","확률로 2배 피해":"chance to deal 2× damage","확률로 피격 무효":"chance to negate a hit","체력 높은 적에게":"To the highest-HP enemy","체력 낮은 적에게":"To the lowest-HP enemy","아군 전체에 최대":"All allies: max HP","전부 날려버린다!":"Blow them all away!","한입에 삼켜주마.":"I'll swallow you whole.","늪이 끓어오른다.":"The swamp boils.","뼈까지 갉아주마.":"I'll gnaw you to the bone.","모든 것을 재로.":"All to ashes.","심판을 내리노라.":"I pass judgment.","필드에 내보냅니다":"Send to the field","대기 유닛 출전!":"Reserve unit deployed!","이번 웨이브 발동":"Triggered this wave","하트 보호막 최대":"Max Heart Shield","런 시작 시 정수":"Essence at run start","으)로 이동했어요":") — moved there","마리 추가 소환":" extra units summoned","방화범의 라이터":"Arsonist's Lighter","골드가 부족해요":"Not enough gold","개 폭파! 유닛":" blasted! Units","배치를 바꿨어요":"Positions swapped","흡수 모드 종료":"Absorb mode off","기 전체 흡수!":" absorbed at once!","전직 루트 선택":"Choose Class Route","암굴 바실리스크":"Cavern Basilisk","뼈 드래곤 습격":"Bone Dragon Raid","무한 모드 해금":"Endless Mode unlocked","재도전 · 남은":"retry · left:","만큼 체력 회복":"of damage dealt is healed","적중 시 체력이":"On hit, enemies at","하이 엘프 보병":"High Elf Infantry","내 뒤로 서라.":"Stand behind me.","불타 사라져라.":"Burn away.","탭하여 건너뛰기":"Tap to skip","클래스 (전직)":"Classes (Promotion)","봉인 해제 인장":"Unsealing Sigil","운명의 돌 해금":"Fate Stone Unlock","최대 배치 유닛":"Max deployed units","상점 리롤 비용":"Shop reroll cost","사신의 모래시계":"Reaper's Hourglass","아이템 칸 확장":"Item Slot Expansion","아이템 장착 칸":"Item equip slots","빛나는 첫 선택":"Radiant First Pick","연구·운명의 돌":"Research · Fate Stones","전 유닛 공격력":"All units ATK","흡수할 때 흡수":"On absorb, absorb","이미 해금했어요":"already unlocked","정수가 부족해요":"Not enough Essence","자리가 부족해":"Not enough room —","스핀 중...":"Spinning...","의 고유 각인":"'s innate imprint","의 각인 슬롯":"'s imprint slots","황무지 파괴자":"Wasteland Destroyer","잃어버린 유적":"Lost Ruins","차원의 파괴자":"Dimension Destroyer","그림울프 오크":"Grimwolf Orc","오크 대주술사":"Orc Archshaman","황야의 피리꾼":"Wasteland Piper","강화 적 출현":"Empowered enemies appear","최초 보너스)":"first-clear bonus)","놓치지 않아.":"You won't escape.","조금만 버텨!":"Hang in there!","돌이 되어라.":"Turn to stone.","사기꾼의 큐브":"Trickster's Cube","블라스트 카트":"Blast Cart","패시브 아이템":"Passive item","빈 아이템 칸":"Empty item slot","다음 선택까지":"Next pick in","도달 시 해금":" reached: unlocks","저주받은 버섯":"Cursed Mushroom","코어 확률 업":"Core Rate Up","블라스트 숙련":"Blast Mastery","전 유닛 체력":"All units HP","장착 칸 부족":"No free slot","해금! (남은":"unlocked! (left:","다음 스테이지":"Next Stage","보강하러 가기":"Go reinforce","확정 당첨!":"Guaranteed win!","전설 유닛!":"Legendary unit!","잭팟 보너스":"Jackpot bonus","메아리 조개":"Echo Shell","넛지 실패…":"Nudge failed…","마리 초과!":" exceeded!","대기석 가득":"bench full","흡수 완료!":"absorbed!","탭해서 시작":"Tap to start","심연의 동굴":"Abyssal Cave","잿빛 황무지":"Ashen Wasteland","지옥의 군주":"Lord of Hell","차원의 균열":"Dimensional Rift","용혈 주술사":"Dragonblood Shaman","역가시 폭군":"Spineback Tyrant","칼비늘 장로":"Bladescale Elder","해골 드래곤":"Skeleton Dragon","파멸 드래곤":"Doom Dragon","별의 심판관":"Star Arbiter","매혹의 피리":"Bewitching Pipe","투사체 반사":"Projectile Reflect","공포의 광역":"Area of Terror","파멸의 화상":"Doom Burn","별빛 보호막":"Starlight Shield","클리어 필요":"clear required","탐욕의 성배":"Chalice of Greed","전술적 이자":"Tactical Interest","보스 전초전":"Boss prelude","난이도 해금":"difficulty unlocked","재도전 보급":"Retry Supply","쓰러진 유닛":"Fallen units","획득 (보유":"earned (total","명을 관통해":" enemies behind for","명에게 전이":" enemies","받는 공격을":"Incoming attacks:","공속 저하)":"attack speed down)","초간 공격력":"s ATK","생명력 흡수":"Lifesteal","가한 피해의":"Of damage dealt,","그림자 분신":"Shadow Clone","불멸의 영혼":"Undying Soul","본체 체력의":"With HP","슬롯 없음)":"no slot)","제물로 쓰면":"If sacrificed","최종 클래스":"Final class","메아리 등불":"Echo Lantern","혈통의 인장":"Bloodline Seal","찢어진 악보":"Torn Score","광대의 씨앗":"Jester's Seed","되감기 시계":"Rewind Clock","쌍둥이 체리":"Twin Cherries","탐욕의 진주":"Greedy Pearl","조커의 미소":"Joker's Grin","마녀의 횃불":"Witch's Torch","굽은 송곳니":"Crooked Fang","운명의 망치":"Hammer of Fate","광대의 촛불":"Jester's Candle","빈 코어 칸":"Empty core slot","탭하여 설명":"Tap for details","프리즘 해금":"Prism Unlock","프리즘 연구":"Prism Research","퀘스트 리롤":"Quest Reroll","초보자 방패":"Novice Shield","승리 보너스":"Victory Bonus","계산된 행운":"Calculated Luck","신속한 타격":"Swift Strikes","고정된 자세":"Anchored Stance","넘치는 성배":"Overflowing Chalice","행상인의 짐":"Peddler's Pack","불타는 심장":"Burning Heart","재활용 장부":"Recycling Ledger","동맹의 문장":"Alliance Crest","언데드 진영":"Undead Faction","스핀 +5회":"Spins +5","골드 주머니":"Gold Pouch","보호막 충전":"Shield Recharge","하트 보호막":"Heart Shield","승급 소환권":"Advanced Summon Ticket","공격의 인장":"Seal of Attack","행운의 동전":"Lucky Coin","슬롯 조율기":"Slot Tuner","신속의 장화":"Boots of Haste","골드 이자율":"Gold interest rate","이미 해금됨":"Already unlocked","화면 흔들림":"Screen shake","희귀·특수":"Rare·Special","줄 매칭!":"-line match!","기만 소환":" summoned","추가 사용":"extra use","마법 램프":"Magic Lamp","폭발 베리":"Burst Berry","마리 소환":" summoned","출전 한도":"Deploy limit","제물 각인":"Sacrifice imprints","흡수 확인":"Confirm Absorb","각인 교체":"Replace imprint","버릴 각인":"Discarded imprint","전체 흡수":"Absorb All","후방 대기":"Reserve","유닛 없음":"No units","잊혀진 숲":"Forgotten Forest","붉은 지옥":"Crimson Hell","하울 오크":"Howl Orc","암흑 군주":"Dark Lord","쌍성 군주":"Twin Star Lord","우주 제왕":"Cosmic Emperor","늑대 소환":"Wolf Summon","낙하 마법":"Falling Spell","관통 광선":"Piercing Beam","관통 참격":"Piercing Slash","꼬리 독침":"Tail Stinger","칼날 비늘":"Blade Scales","별의 심판":"Star Judgment","시간 정지":"Time Stop","최고 기록":"Best","최종 보스":"Final boss","무한 모드":"Endless Mode","다시 시작":"Restart","추가 타격":" bonus hit","영혼 분리":"Soul Split","최대 체력":"max HP","거신 소환":"Summon Colossus","지속 피해":"damage over time","공격 간격":"Attack interval","엘프 병사":"Elf Soldier","엘프 기사":"Elf Knight","사수 병사":"Marksman Soldier","엘프 궁수":"Elf Archer","하이 엘프":"High Elf","엘프 보병":"Elf Infantry","엘프 법사":"Elf Mage","야생 법사":"Wild Mage","도끼 기병":"Axe Rider","무법 기병":"Outlaw Rider","아군 전체":"All allies","부숴주마!":"I'll crush you!","쏟아져라!":"Pour down!","치유의 빛":"Healing Light","크아아아아":"RAAAAAH","화상 해제":"Burn cleared","각인 슬롯":"Imprint slots","고유 각인":"Innate imprint","최종 진화":"final evolution","잠금 해제":"Unlocked","등장 확률":"appearance rate","스핀 비용":"Spin cost","이중 장부":"Double Ledger","검은 악보":"Black Score","복사 모자":"Copy Cap","역방향 축":"Reverse Axle","공명 모루":"Resonant Anvil","에코 거울":"Echo Mirror","뒤틀린 종":"Twisted Bell","황금 레버":"Golden Lever","황금 문장":"Golden Crest","네잎클로버":"Four-Leaf Clover","와일드카드":"Wildcard","상승 깃털":"Updraft Feather","포자 버섯":"Spore Mushroom","현재 효과":"Current effect","다음 레벨":"Next level","최대 레벨":"Max level","상시 효과":"Always-on effect","코어 슬롯":"Core slots","선택 완료":"All picked","코어 선택":"Core Pick","코어 리롤":"Core Reroll","무료 리롤":"Free rerolls","코어 획득":"Core acquired","업그레이드":"Upgrade","전직 루트":"Class route","고급 해금":"Advanced Unlock","고급 연구":"Advanced Research","희귀 해금":"Rare Unlock","희귀 연구":"Rare Research","전설 해금":"Legendary Unlock","전설 연구":"Legendary Research","쌍둥이 돌":"Twin Stone","미풍의 돌":"Breeze Stone","예감의 돌":"Omen Stone","특수의 돌":"Special Stone","숙련의 돌":"Mastery Stone","균열의 돌":"Rift Stone","별자리 돌":"Constellation Stone","성소의 돌":"Sanctum Stone","도박의 돌":"Gambit Stone","돌 진열대":"Stone Stand","추가 목숨":"Extra Life","초기 보급":"Starting Supplies","시작 골드":"Starting gold","보급 창고":"Supply Depot","역전 레버":"Comeback Lever","원정 보급":"Expedition Supplies","관문 회복":"Gate Recovery","계약 연장":"Contract Extension","비상 정수":"Emergency Essence","잔돈 스핀":"Spare Change Spin","지휘 한도":"Command Limit","성장 분기":"Growth Branch","전투 가속":"Battle Haste","피의 목욕":"Bloodbath","포식 본능":"Predatory Instinct","헤비웨이트":"Heavyweight","상점 리롤":"Shop Reroll","먼지 망토":"Dust Cloak","방패 교본":"Shield Manual","치유의 샘":"Healing Spring","수호 토템":"Guardian Totem","단골 할인":"Regulars' Discount","빠른 선택":"Early Pick","넛지 숙련":"Nudge Mastery","역회전 축":"Reverse Axle","순환의 종":"Cycle Bell","비전 진영":"Arcane Faction","심연 진영":"Abyss Faction","천상 진영":"Celestial Faction","코어 해금":"Core Unlocks","강철 부적":"Iron Charm","정수 결정":"Essence Crystal","흡수 촉매":"Absorb Catalyst","복리 장부":"Compound Ledger","시작 노드":"Start node","처음이라면":"New here?","구매 가능":"Can buy","슬롯 열기":"Open Slot","특성 계승":"Inherit Trait","남은 횟수":"Spins left","기 소환":" summoned","꽝 보정":"Pity","흡수하기":"Absorb","새 각인":"New imprint","맹독아귀":"Venom Maw","황야검치":"Dune Sabertooth","끓는 늪":"Boiling Swamp","적 약화":"Enemies weakened","클리어!":"Clear!","기 부활":" revived","회 보유":" spins held","회 보장":" guaranteed","이번 판":"This run","초 기절":"s","공격 시":"On attack","로 부활":" HP","적중 시":"On hit","회 연쇄":" times","공격력의":"ATK","날카로움":"Sharp","데드아이":"Deadeye","바바리안":"Barbarian","대주술사":"Archshaman","치유술사":"Healer","적 전체":"All enemies","일점저격":"Pinpoint Shot","폭풍연사":"Storm Volley","수호방벽":"Guardian Wall","돌격신호":"Charge Signal","양분 잎":"Nutrient Leaf","순환 종":"Cycle Bell","반동 축":"Rebound Axle","대기 중":"Standby","가득 참":"Full","다음까지":"Next in","회 남음":" left","잠든 힘":"Dormant Power","다재다능":"Versatile","블라스트":"Blast","스핀 팩":"Spin Pack","선행으로":"Go to prereq","재정비!":"Regroup!","준비 중":"Coming soon","배경음악":"Music","내리세요":"down","프리즘":"Prism","화약통":"Powder Keg","소환!":"summoned!","최대)":"max)","승급!":"promoted!","진화!":"evolved!","잠금됨":"Locked","백안왕":"White-Eye King","핏꼬리":"Bloodtail","웨이브":"Wave","재도전":"Retry","수문장":"Gatekeeper","추종자":"Follower","밀치기":"Knockback","메테오":"Meteor","승천격":"Skyward Strike","집요함":"Relentless","중첩)":" stacks)","확률로":" chance","거대화":"Enlarge","빈 칸":"Empty","공격력":"ATK","보호막":"Shield","해적왕":"Pirate King","석궁수":"Crossbowman","장궁병":"Longbowman","순찰자":"Patroller","명사수":"Marksman","레인저":"Ranger","창위병":"Spear Guard","근위병":"Royal Guard","약탈자":"Raider","무법자":"Outlaw","바이킹":"Viking","주술사":"Shaman","대사제":"High Priest","돌격병":"Charger","중기병":"Heavy Cavalry","검성제":"Sword Emperor","베테랑":"Veteran","초마다":"s each","기에게":" enemies","파쇄격":"Shatter Strike","대폭렬":"Grand Blast","필살기":"Ultimate","간다!":"Here I go!","클래스":"Class","선택!":"chosen!","각성!":"Awakened!","숙련!":"Mastered!","스핀.":" spins.","아이템":"Items","도탄석":"Ricochet Stone","마법진":"Magic Circle","소환권":"Summon Ticket","클리어":"clear","해금!":"Unlocked!","사용!":"used!","사운드":"Sound","효과음":"SFX","한국어":"한국어","플레이":"Play","아래로":"Pull","일반":"Common","고급":"Advanced","전설":"Legendary","스핀":"Spins","유닛":"Unit","기본":"base","제물":"Sacrifice","촉매":"Catalyst","흡수":"Absorb","없음":"None","장착":"equip","추가":"bonus","기존":"Old","기)":")","취소":"Cancel","각인":"Imprint","변환":"Convert","대기":"Reserve","시작":"start","보스":"Boss","포효":"Roar","석화":"Petrify","출전":"Deploy","도전":"Challenge","골드":"Gold","해금":"unlocked","처치":"defeated","분신":"Clone","거신":"Colossus","영혼":"Soul","이자":"interest","최소":"Min","보유":"held","정수":"Essence","도달":"reached","축적":"Buildup","연발":"Volley","관통":"Pierce","피해":"damage","전이":"Transfer","폭주":"Overdrive","강타":"Bash","실명":"Blind","중독":"Poison","방어":"Block","축소":"Shrink","부활":"Revival","최대":"max","자폭":"Self-Destruct","연쇄":"Chain","공포":"Fear","오한":"Chill","감소":"reduced","처형":"Execute","위엄":"Majesty","파멸":"Ruin","군주":"Overlord","지진":"Quake","강인":"Tough","신속":"Swift","흡혈":"Vampiric","화염":"Flame","치명":"Critical","회피":"Evasion","가시":"Thorns","선제":"First Strike","분노":"Rage","재생":"Regen","광역":"Cleave","병사":"Soldier","기사":"Knight","해적":"Pirate","바그":"Varg","황제":"Emperor","장군":"General","기절":"stun","회복":"heal","다음":"Next","간격":"Interval","편차":"Var.","진화":"Evolve","각성":"Awaken","잠금":"Lock","해제":"Unlock","희귀":"Rare","행운":"Luck","풍요":"Plenty","절약":"Thrift","정예":"Elite","금니":"Gold Tooth","조커":"Joker","경제":"Economy","복구":"Recovery","넛지":"Nudge","소환":"Summon","폭파":"Blast","상시":"Always","획득":"Obtain","발동":"Triggered","코어":"Core","효과":"Effect","상태":"Status","안내":"Info","선택":"Pick","리롤":"Reroll","지금":"now","계열":"family","기록":"Record","최고":"Best","터널":"Tunnel","잔광":"Afterglow","도감":"Codex","보급":"Supply","상점":"Shop","연구":"Research","기타":"Misc","선행":"Requires","필요":"needed","완료":"Done","구매":"bought","전부":"all","이동":"Move","잠김":"Locked","품절":"Sold out","부족":"Short","로비":"Lobby","메인":"Main","언어":"Language","진동":"Vibration","확인":"OK","비용":"Cost","생명":"Life","옵션":"Options","닫기":"Close","적":"Enemy","회":"","초":"s","개":"","배경음악·효과음은 설정만 저장되고, 기능은 다음 업데이트에서 연결됩니다. 언어·진동·화면 흔들림은 바로 적용됩니다.":"Music and SFX are saved as settings only and will be connected in a future update. Language, vibration and screen shake apply right away.","흡수 ON":"Absorb ON","흡수 모드 ON":"Absorb mode ON"};
+      const RULES = [
+  ['기본 공격 후 다음 기본 공격의 공격력 \\+§%', 'After a basic attack, the next basic attack gets ATK +$1%'],
+  ['§번째 기본 공격마다 같은 대상에 공격력 §% 추가 타격', 'Every $1rd basic attack hits the same target again for $2% ATK'],
+  ['기본 공격이 뒤쪽 적 최대 §명을 관통해 §% 피해', 'Basic attacks pierce up to $1 enemies behind for $2% damage'],
+  ['공격 시 입힌 피해의 30%가 다른 적 §명에게 전이', '30% of damage dealt on attack spreads to $1 other enemies'],
+  ['적 처치 후 다음 기본 공격의 공격력 \\+§%', 'After a kill, the next basic attack gets ATK +$1%'],
+  ['공격 시 18% 확률로 대상 §초 기절', '18% chance on attack to stun the target for $1s'],
+  ['공격 시 16% 확률로 대상 §초 실명 \\(공격 빗나감\\)', '16% chance on attack to blind the target for $1s (attacks miss)'],
+  ['공격 시 25% 확률로 §초간 중독 \\(0\\.5초마다 최대 체력의 §%\\)', '25% chance on attack to poison for $1s ($2% of max HP every 0.5s)'],
+  ['받는 공격을 §% 확률로 방어 \\(무효\\)', '$1% chance to block incoming attacks (negated)'],
+  ['공격 시 §% 확률로 3초간 대상 축소 \\(공격력 -§%, 공속 저하\\)', '$1% chance on attack to shrink the target for 3s (ATK -$2%, slower attacks)'],
+  ['공격 시 10% 확률로 운석: 주변 최대 3명에게 §% 피해 \\(최대 체력이 높을수록 범위 증가\\)', '10% chance on attack to drop a meteor: up to 3 nearby enemies take $1% damage (bigger area with higher max HP)'],
+  ['웨이브마다 1회, 쓰러지면 체력 §%로 부활 \\+ §초간 공격력 \\+§%', 'Once per wave, revive at $1% HP when downed + ATK +$3% for $2s'],
+  ['적중 시 §초 동안 적의 영혼을 분리 \\(영혼에 가한 피해가 본체에도 전달\\)', "On hit, split off the enemy's soul for $1s (damage to the soul also hits the body)"],
+  ['적중 시 12% 확률로 적을 §초 띄우고, 착지 시 주변 적에게 §% 피해', '12% chance on hit to launch the enemy for $1s; on landing, nearby enemies take $2% damage'],
+  ['연속 공격마다 공격 속도 \\+§% \\(최대 §중첩\\)', 'Each consecutive attack: attack speed +$1% (max $2 stacks)'],
+  ['가한 피해의 §%만큼 체력 회복', 'Heal $1% of damage dealt'],
+  ['사망 시 폭발: 주변 적에게 최대 체력의 §% 피해 \\+ 1초 기절', 'On death, explode: nearby enemies take damage equal to $1% of max HP + 1s stun'],
+  ['적중 시 피해가 가장 가까운 다른 적에게 §회 연쇄', 'On hit, damage chains to the nearest other enemy $1 times'],
+  ['적중 시 §% 확률로 §초 동안 공포에 질려 도망', '$1% chance on hit to make the enemy flee in fear for $2s'],
+  ['적중 시 대상의 공격 속도와 이동 속도 §% 감소', "On hit, lower the target's attack and move speed by $1%"],
+  ['피격 시 15% 확률로 §초간 거대화 \\(받는 피해 -25%, 공격력 \\+25%\\)', '15% chance when hit to Enlarge for $1s (damage taken -25%, ATK +25%)'],
+  ['적중 시 체력이 §% 이하인 적을 즉시 처치', 'On hit, instantly defeat enemies at or below $1% HP'],
+  ['함께 싸우는 분신 소환 \\(본체 능력치의 §%\\), 처치되면 2초 후 재소환', "Summon a clone that fights alongside ($1% of the original's stats); it respawns 2s after being defeated"],
+  ['존재 효과: 모든 적 공격력 -§%, 최대 체력 -§%', 'Aura: all enemies ATK -$1%, max HP -$2%'],
+  ['공격 시 §% 확률로 §초 동안 시간을 멈춤', '$1% chance on attack to stop time for $2s'],
+  ['사망 시 공격력·체력 §%의 영혼 상태로 전투에 남음', 'On death, stays in battle as a soul with $1% ATK·HP'],
+  ['본체 체력의 §%, 공격력의 §%를 지닌 거신 소환', "Summon a Colossus with $1% of the original's HP and $2% of its ATK"],
+  ['존재 효과: 모든 적에게 초당 공격력의 §% 지속 피해', 'Aura: all enemies take $1% of ATK as damage every second'],
+  ['처치한 적을 최대 §명까지 추종자로 \\(보스 추종자는 다음 보스전까지 유지\\)', 'Turns up to $1 defeated enemies into followers (boss followers stay until the next boss fight)'],
+  ['공격 시 12% 확률로 모든 적에게 §% 피해 \\+ 1초 기절', '12% chance on attack to deal $1% damage to all enemies + 1s stun'],
+  ['공격 시 화상 \\(3초간 초당 ATK의 20%\\)', 'Burn on attack (20% ATK per second for 3s)'],
+  ['잃은 체력 비율만큼 공격력 최대 \\+§%', 'ATK up to +$1% based on HP lost'],
+  ['체력 30% 이하 적에게 피해 \\+§%', '+$1% damage to enemies at or below 30% HP'],
+  ['웨이브 클리어 스핀 \\+§회', 'Wave clear spins +$1'],
+  ['골드 이자율 \\+§%p \\(기본 5%\\)', 'Gold interest +$1%p (base 5%)'],
+  ['흡수할 때 흡수 LV \\+§', 'Absorb LV +$1 when absorbing'],
+  ['웨이브를 이길 때마다 골드 \\+§\\.', 'Gold +$1 for every wave won.'],
+  ['§~§웨이브 중 보호막 피해를 처음 한 번 막아 줍니다\\.', 'Blocks the first shield damage once during waves $1–$2.'],
+  ['§의 배수\\(심판·보스\\) 웨이브를 클리어하면 하트 보호막 \\+§ 회복\\.', 'Clearing a wave that is a multiple of $1 (Judgment/Boss) restores +$2 Heart Shield.'],
+  ['기지가 피해를 입는 웨이브마다 첫 피격 시 골드 \\+§\\.', 'Each wave your base takes damage, the first hit grants gold +$1.'],
+  ['§성 전직 시 서로 다른 특성의 후보 3개 중 1개 선택\\.', 'On ★$1 promotion, choose 1 of 3 candidates with different traits.'],
+  ['무한 모드에서 빨리감기 최대 ×§\\.', 'Fast-forward up to ×$1 in Endless mode.'],
+  ['(^|· )§초마다 ', '$1Every $2s: '],
+  ['체력 높은 적에게 ×§ \\+ 기절 §초', '×$1 to the highest-HP enemy + $2s stun'],
+  ['체력 높은 적에게 ×§', '×$1 to the highest-HP enemy'],
+  ['체력 낮은 적에게 ×§', '×$1 to the lowest-HP enemy'],
+  ['적 §기에게 ×§', '×$2 to $1 enemies'],
+  ['적 전체 ×§', '×$1 to all enemies'],
+  ['아군 전체에 최대 HP §% 보호막', 'Shield all allies for $1% max HP'],
+  ['아군 전체 HP §% 회복', 'Heal all allies $1% HP'],
+  ['\\+ HP §% 회복', '+ heal $1% HP'],
+  ['스핀 §회 달성 · 하나를 무료로 고르세요\\. 효과는 이번 판 내내 유지돼요', '$1 spins reached · pick one for free. It lasts the whole run'],
+  ['§줄 매칭! 자리가 부족해 §기만 소환', '$1-line match! Not enough room — only $2 summoned'],
+  ['§줄 매칭! §기 소환', '$1-line match! $2 summoned'],
+  ['네잎클로버: 클로버 칸 당첨! 유닛 §마리 추가 소환', 'Four-Leaf Clover: clover cell won! $1 extra units summoned'],
+  ['방화범의 라이터: (.+?) §개도 함께 폭파! 유닛 1마리 소환', "Arsonist's Lighter: $1 ×$2 also blasted! 1 unit summoned"],
+  ['화약통: (.+?) §개 폭파! 충전량 소모 없음', 'Powder Keg: $1 ×$2 blasted! No charge used'],
+  ['폭발 베리: (.+?) §개 폭파! 유닛 §마리 소환', 'Burst Berry: $1 ×$2 blasted! $3 units summoned'],
+  ['마법 램프: §번 릴을 한 칸 이동!', 'Magic Lamp: reel $1 shifted one step!'],
+  ['탐욕의 성배: 적립 § 골드 \\(전투 시작 시 획득\\)', 'Chalice of Greed: $1 gold banked (collected at battle start)'],
+  ['메아리 조개: (\\S+) 추가 사용', 'Echo Shell: $1 gets an extra use'],
+  ['꽝 보정 §/§', 'Pity $1/$2'],
+  ['매칭 없음 · 칸을 탭하면 그 열이 한 칸 내려가요 \\(넛지 -§\\)', 'No match · tap a cell to drop its column one step (nudge -$1)'],
+  ['§기 전체 흡수!', 'Absorbed $1 at once!'],
+  ['전체 흡수 \\(Absorb All · §기\\)', 'Absorb All ($1)'],
+  ['흡수하기 · 각인 (.+?) 장착 \\(LV1\\)', 'Absorb · equip imprint $1 (LV1)'],
+  ['흡수하기 · 각인 (.+?) LV', 'Absorb · imprint $1 LV'],
+  ['(.+?)이\\(가\\) 이미 최대\\(LV5\\)라 각인은 그대로 · 대신 유닛 Lv \\+§ 추가', '$1 is already at max (LV5), so the imprint stays · unit Lv +$2 instead'],
+  ['각인은 지금 그대로 유지 · 대신 유닛 Lv \\+§ 추가', 'Imprints stay as they are · unit Lv +$1 instead'],
+  ['기존 (.+?) LV(\\d+)은\\(는\\) 사라지고, 새 각인 (.+?)은\\(는\\) LV1부터 시작', 'The old $1 LV$2 disappears, and the new imprint $3 starts at LV1'],
+  ['새 각인 (.+?) \\(슬롯 없음\\)', 'New imprint $1 (no slot)'],
+  ['(.+?) → (.+?) 흡수$', 'Absorb $1 → $2'],
+  ['제물 (.+?)의 고유 각인: ', "Sacrifice $1's innate imprint: "],
+  ['(.+?)의 각인 슬롯 ', "$1's imprint slots "],
+  ['유닛 Lv § \\(최대\\)', 'Unit Lv $1 (max)'],
+  ['흡수 Lv 30 필요 \\(현재 §\\)', 'Requires absorb Lv 30 (now $1)'],
+  ['출전 한도 §마리 초과! (.+?)이 후방 대기 중입니다\\. 필드에서 유닛 위로 드래그해 흡수하세요\\.', 'Deploy limit of $1 exceeded! $2 is waiting in reserve. Drag it onto a unit on the field to absorb it.'],
+  ['생명 -1 \\(남은 ❤️§\\)', 'Life -1 (❤️$1 left)'],
+  ['Wave § 재도전 · 남은 ❤️ §', 'Wave $1 retry · ❤️ $2 left'],
+  ['스핀 \\+§회', 'Spins +$1'],
+  ['최소 §회 보장 · 지금 §회', 'At least $1 guaranteed · now $2'],
+  ['스핀 §회 보유', '$1 spins held'],
+  ['최소 §회 보장', 'At least $1 guaranteed'],
+  ['골드 § 보유', '$1 gold held'],
+  ['스핀 §회를 돌릴 만큼 채워 줌', 'Topped up to cover $1 spins'],
+  ['스핀 §회분 이상이라 그대로', 'Already enough for $1 spins, unchanged'],
+  ['Wave § 적 약화 -§%', 'Wave $1 enemies weakened -$2%'],
+  ['적 약화 -§%', 'enemies weakened -$1%'],
+  ['체력·공격력 감소 · 또 지면 -§%', 'HP·ATK reduced · lose again for -$1%'],
+  ['GAME OVER · Wave §에서 생명을 모두 잃었어요', 'GAME OVER · lost all lives on Wave $1'],
+  ['쓰러진 유닛 §기 부활', '$1 fallen units revived'],
+  ['\\(이자 §\\)', '(interest $1)'],
+  ['재도전 보급 \\+§ 골드', 'Retry Supply +$1 gold'],
+  ['전술적 이자 \\+§ 골드', 'Tactical Interest +$1 gold'],
+  ['(.+?)가 삼킨 아군을 내던졌다!', '$1 spat out the ally it swallowed!'],
+  ['Wave § 도달 시 해금', 'Unlocks at Wave $1'],
+  ['Wave § 도달', 'Reached Wave $1'],
+  ['이번 판 💎 § 획득 \\(보유 §\\)', 'This run: 💎 $1 earned ($2 total)'],
+  ['^§웨이브$', '$1 waves'],
+  ['기원석이 부족해요 \\(필요 § · 보유 §\\)', 'Not enough Gems (need $1 · have $2)'],
+  ['업그레이드 \\(구매 가능 §\\)', 'Upgrades ($1 available)'],
+  ['해금 §/§ · 보유 💎 §', 'Unlocked $1/$2 · 💎 $3 held'],
+  ['💎 부족 §/§', '💎 $1/$2'],
+  ['(.+?): 이미 해금했어요', '$1: already unlocked'],
+  ['(.+?) 해금! \\(남은 💎 §\\)', '$1 unlocked! (💎 $2 left)'],
+  ['(.+?)\\(으\\)로 이동했어요', 'Moved to $1'],
+  ['처음이라면 ', 'New here? Tap '],
+  ['\\(💎1\\)부터 탭해서 사세요', ' (💎1) first to buy it'],
+  ['([^·]+?) 업그레이드 §/§ 필요', '$1 upgrades needed: $2/$3'],
+  ['· ([^·]+?) §개 구매', '· buy $2 $1 upgrades'],
+  ['· ([^·]+?) 전부 구매', '· buy all $1 upgrades'],
+  ['(.+?) (Easy|Normal|Hard) 클리어 필요', 'Clear $1 on $2 first'],
+  ['(Easy|Normal|Hard) 클리어 필요', 'Clear $1 first'],
+  ['· ([^·]+?) (Easy|Normal|Hard) 클리어', '· clear $1 on $2'],
+  ['(Easy|Normal|Hard) 난이도 해금', '$1 difficulty unlocked'],
+  ['(.+?) \\((Easy|Normal|Hard)\\) 클리어!', '$1 ($2) cleared!'],
+  ['무료 리롤 §회 남음', 'Free rerolls left: $1'],
+  ['다음까지 §스핀', 'Next in $1 spins'],
+  ['장착 §/§', 'Equipped $1/$2'],
+  ['발동 ×§', 'Triggered ×$1'],
+  ['대기 ×§', 'Standby ×$1'],
+  ['(.+?) 사용!', '$1 used!'],
+  ['최고 Wave §', 'Best Wave $1'],
+  ['(.+?) 계열$', '$1 family'],
+  ['선행: ', 'Requires: '],
+  ['★§에서 A/B 루트 선택 \\(Lv §\\) → ★§ 최종 진화', '★$1: choose route A/B (Lv $2) → ★$3 final evolution'],
+  ['★§ 진화: ', '★$1 evolves into: '],
+  ['수문장 ', 'Gatekeeper '],
+  ['언어 · Language', 'Language'],
+  ['하트 보호막 · 0이 되면 생명 -1', 'Heart Shield · lose 1 life when it hits 0'],
+  ['유닛을 이 넓은 영역에', 'Drag your units anywhere'],
+  ['드래그해서 자유롭게 배치하세요', 'in this wide area'],
+].map(([p, r]) => [new RegExp(p.split('§').join(NUM), 'g'), r]);
+      const POST = [[/(\d)(?:회|기|명|마리|개)(?![가-힣])/g, '$1'], [/(\d)번째/g, '$1th'],
+        [/(^|[^\d.])1 (spin|unit|enemie|time|reroll|extra unit|fallen unit|other enemie|wave)s\b/g, (m, a, w) => a + '1 ' + w.replace(/enemie$/, 'enemy')], [/ {2,}/g, ' ']];
+      const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const RE = new RegExp(Object.keys(DICT).sort((a, b) => b.length - a.length).map(esc).join('|'), 'g');
+      const ATTRS = ['title', 'aria-label', 'placeholder', 'alt'];
+      const cache = new Map(), miss = new Set(), orig = new Map(), origA = new Map();
+      let lang = 'ko';
+      function tr(s) {
+        if (!HAN.test(s)) return s;
+        let o = cache.get(s); if (o !== undefined) return o;
+        o = s;
+        for (const [re, r] of RULES) if (re.test(o)) { re.lastIndex = 0; o = o.replace(re, r); }
+        o = o.replace(RE, m => DICT[m]);
+        if (s.indexOf('  ') < 0) for (const [re, r] of POST) o = o.replace(re, r); else for (const [re, r] of POST.slice(0, 2)) o = o.replace(re, r);
+        if (HAN.test(o)) { miss.add(o); if (miss.size > 300) miss.clear(); }
+        if (cache.size > 4000) cache.clear();
+        cache.set(s, o); return o;
+      }
+      const skipEl = el => !el || el.closest('script,style,[translate="no"]');
+      function doText(n) {
+        const v = n.data; if (!HAN.test(v) || skipEl(n.parentElement)) return;
+        const t = tr(v); if (t === v) return;
+        orig.set(n, v); n.data = t;
+      }
+      function doAttr(el) {
+        for (const a of ATTRS) {
+          const v = el.getAttribute(a); if (!v || !HAN.test(v) || skipEl(el)) continue;
+          let m = origA.get(el); if (!m) origA.set(el, m = {});
+          m[a] = v; el.setAttribute(a, tr(v));
+        }
+      }
+      const FILTER = { acceptNode: n => n.nodeType === 1 && (n.tagName === 'SCRIPT' || n.tagName === 'STYLE') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT };
+      function walk(root) {
+        if (root.nodeType === 3) return doText(root);
+        if (root.nodeType !== 1 || root.tagName === 'SCRIPT' || root.tagName === 'STYLE') return;
+        doAttr(root);
+        const tw = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, FILTER);
+        for (let n = tw.nextNode(); n; n = tw.nextNode()) n.nodeType === 3 ? doText(n) : doAttr(n);
+      }
+      function prune() { // 화면에서 사라진 글자는 원문 기억에서 지움 (메모리 정리)
+        if (orig.size > 2500) orig.forEach((v, n) => { if (!n.isConnected) orig.delete(n); });
+        if (origA.size > 800) origA.forEach((v, el) => { if (!el.isConnected) origA.delete(el); });
+      }
+      const mo = new MutationObserver(list => {
+        if (lang !== 'en') return;
+        for (const m of list) {
+          if (m.type === 'characterData') doText(m.target);
+          else if (m.type === 'attributes') doAttr(m.target);
+          else for (const n of m.addedNodes) walk(n);
+        }
+        prune();
+      });
+      function set(l) {
+        l = l === 'en' ? 'en' : 'ko';
+        document.documentElement.lang = l;
+        if (l === lang) return;
+        lang = l;
+        if (l === 'en') { walk(document.documentElement); mo.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS }); }
+        else {
+          mo.disconnect();
+          orig.forEach((v, n) => { if (n.isConnected && n.data === tr(v)) n.data = v; }); orig.clear();
+          origA.forEach((m, el) => { for (const a in m) if (el.getAttribute(a) === tr(m[a])) el.setAttribute(a, m[a]); }); origA.clear();
+        }
+      }
+      return { set, tr, get lang() { return lang; }, miss };
+    })();
+    window.I18N = I18N;
+
     // ========== 설정 (옵션) ==========
-    // 배경음악·효과음·언어는 지금은 설정값만 저장 → 사운드/번역을 붙일 때 SET.bgm, SET.bgmVol, SET.sfx, SET.sfxVol, SET.lang 을 읽으면 됨
+    // 배경음악·효과음은 지금은 설정값만 저장 → 사운드를 붙일 때 SET.bgm, SET.bgmVol, SET.sfx, SET.sfxVol 을 읽으면 됨. 언어(SET.lang)는 I18N이 바로 적용
     const SET_KEY = 'slotbattle_settings_v1';
     const SET = Object.assign({ bgm: true, bgmVol: 70, sfx: true, sfxVol: 80, lang: 'ko', vib: true, shake: true }, (() => { try { return JSON.parse(localStorage.getItem(SET_KEY) || '{}') || {}; } catch (e) { return {}; } })());
-    function applySet() { document.body.classList.toggle('noshake', !SET.shake); }
+    function applySet() { document.body.classList.toggle('noshake', !SET.shake); I18N.set(SET.lang); }
     function saveSet() { try { localStorage.setItem(SET_KEY, JSON.stringify(SET)); } catch (e) {} applySet(); }
     applySet();
     function renderOpt() {
@@ -4830,7 +5436,7 @@
       root.querySelectorAll('em[data-v]').forEach(e => { e.textContent = SET[e.dataset.v]; });
       root.querySelectorAll('.opt-row.sub[data-for]').forEach(r => r.classList.toggle('off', !SET[r.dataset.for]));
       $('optLang').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === SET.lang));
-      $('optNote').textContent = SET.lang === 'en' ? 'English 화면은 준비 중이에요. 선택은 저장되고, 번역이 추가되면 바로 적용됩니다.' : '배경음악·효과음·언어는 설정만 저장되고, 기능은 다음 업데이트에서 연결됩니다. 진동·화면 흔들림은 바로 적용됩니다.';
+      $('optNote').textContent = '배경음악·효과음은 설정만 저장되고, 기능은 다음 업데이트에서 연결됩니다. 언어·진동·화면 흔들림은 바로 적용됩니다.';
     }
     function openOpt() { renderOpt(); $('optScreen').classList.add('show'); }
     function closeOpt() { $('optScreen').classList.remove('show'); }
@@ -4880,11 +5486,239 @@
       }
       function hide() { el.classList.remove('show', 'leave'); cancelAnimationFrame(raf); raf = 0; clearInterval(reelIv); BGW.showcase(null); }
       $('tPlay').addEventListener('click', () => { if (el.classList.contains('leave')) return; try { SET.vib && navigator.vibrate && SET.vib && navigator.vibrate(20); } catch (e) {}
-        el.classList.add('leave'); setTimeout(() => { hide(); lbDiff = Math.min(lbDiff, 2); renderLobby(); $('lobby').classList.add('show'); }, 320); });
+        el.classList.add('leave'); setTimeout(() => { hide(); lbDiff = Math.min(lbDiff, 2); $('lobby').classList.add('show'); renderLobby(); }, 320); });
       $('tOpt').addEventListener('click', openOpt);
       $('lbBack').addEventListener('click', show);
       $('lbOpt').addEventListener('click', openOpt);
       return { show, hide };
+    })();
+    // ========== 튜토리얼: 첫 웨이브를 직접 해 보며 배우기 ==========
+    // 화면을 가리는 창(결과·재정비·상세·상점·컷인 등)이 열리면 잠시 숨었다가 닫히면 이어서 진행합니다. (over로 지정한 창은 예외)
+    const TUT = (() => {
+      const FRONT_X = 34, BACK_X = 22; // 배치 연습: 앞줄 칸(fx ≥ 34), 뒷줄 칸(fx ≤ 22) — fx는 땅 너비 % (최대 PLACE_MAX)
+      const T = { mel: null, rng: null, gift: null, n0: 0, ess0: 0, eq0: 0, swapped: false };
+      const uEl = u => { if (!u) return null; const i = G.units.indexOf(u); if (i >= 0) return document.querySelector(`#allyField .actor[data-i="${i}"]`); const j = G.bench.indexOf(u); return j >= 0 ? document.querySelector(`#allyField .actor[data-i="${100 + j}"]`) : null; };
+      const pickUnits = keep => { if (!keep || !T.mel || !G.units.includes(T.mel)) T.mel = G.units.find(u => u.melee) || null; if (!keep || !T.rng || !G.units.includes(T.rng)) T.rng = G.units.find(u => !u.melee) || null; return !!(T.mel && (keep || T.rng)); };
+      function swapStart() { // 배치 연습: 일부러 자리를 바꿔 놓음 (근접이 뒤, 원거리가 앞) → 플레이어가 바로잡게
+        if (T.swapped || !T.mel || !T.rng) return; T.swapped = true;
+        T.mel.fx = 14; T.mel.fy = 62; T.rng.fx = 40; T.rng.fy = 36; renderField();
+      }
+      function unstack() { // 앞줄에 놓은 근접 유닛이 원거리 유닛과 겹치면 살짝 비켜 세움
+        if (!T.mel || !T.rng) return;
+        if (Math.abs(T.mel.fx - T.rng.fx) < 9 && Math.abs(T.mel.fy - T.rng.fy) < 22) { T.mel.fy = T.rng.fy > 50 ? Math.max(12, T.rng.fy - 34) : Math.min(88, T.rng.fy + 34); renderField(); }
+      }
+      function giveGift() { // 흡수 연습용: 근접 유닛과 같은 계열 일반 유닛 1기
+        if (T.gift && (G.units.includes(T.gift) || G.bench.includes(T.gift))) return;
+        const sym = SYMBOLS.find(s => s.name === (T.mel ? T.mel.fam : 'Warrior')) || SYMBOLS[0], n = G.units.length;
+        if (!summonUnit(sym, { tier: 'n' })) return;
+        T.gift = G.units.length > n ? G.units[G.units.length - 1] : G.bench[G.bench.length - 1];
+        if (T.gift && G.units.includes(T.gift)) { T.gift.fx = 27; T.gift.fy = 82; renderField(); }
+      }
+      function topUpEssence() { if (G.essence < 9) { G.essence = 9; updateHud(); } } // 첫 구매가 가능하도록
+      function shopItems() { T.ess0 = G.essence; T.eq0 = equippedCount(); const tb = document.querySelector('#shopPanel .tab[data-tab=items]'); if (tb && !tb.classList.contains('on')) tb.click(); }
+      const STEPS = [
+        { id: "hello", t: "SLOT BATTLE에 오신 걸 환영해요!", b: "슬롯머신을 돌려 영웅을 소환하고, 몰려오는 적을 막아내는 게임이에요. 첫 웨이브를 함께 해 볼게요." },
+        { id: "hud", el: '.top-bar', t: "자원 한눈에 보기", b: "💰 골드로 슬롯을 돌리고, 🔷 정수로 상점 아이템을 사요. ❤️ 생명과 🛡️ 하트 보호막을 지켜야 하고, 💎 기원석은 영구 강화에 써요." },
+        { id: "open", el: '#openBtn', act: () => slotPanel.classList.contains('open'), allow: "#openBtn", delay: 450, t: "슬롯 열기", b: "아래의 슬롯 열기 버튼을 눌러 슬롯머신을 꺼내 보세요." },
+        { id: "spin1", el: '.slide-bar-wrap', act: () => G.spinCount >= 1 && !G.spinning, enter: () => { G.tutPick = 'Warrior'; }, allow: ".slide-bar-wrap", delay: 1100, t: "레버를 당겨 스핀!", b: "오른쪽 슬라이드 바를 아래로 쭉 끌어내리면 릴이 돌아가요. 첫 스핀은 무조건 당첨이에요!" },
+        { id: "win1", el: '#slotGrid', t: "당첨되면 유닛 소환", b: "같은 그림 3개가 가로·세로·대각선 한 줄로 맞으면 그 유닛이 소환돼요. 방금 앞에서 싸우는 근접 유닛이 나왔어요!" },
+        { id: "spin2", el: '.slide-bar-wrap', act: () => G.spinCount >= 2 && !G.spinning, enter: () => { G.tutPick = 'Archer'; }, allow: ".slide-bar-wrap", delay: 1100, t: "원거리 유닛도 뽑기", b: "이번엔 뒤에서 활을 쏘는 원거리 유닛을 뽑아 볼게요. 한 번 더 스핀!" },
+        { id: "cost", el: '.spin-info', t: "비용과 남은 횟수", b: "스핀할 때마다 비용이 조금씩 오르고 남은 횟수가 줄어요. 웨이브를 이기면 횟수가 다시 채워져요." },
+        { id: "close", el: '#slotPanel', hand: '#closeBtn', act: () => !slotPanel.classList.contains('open'), allow: "#closeBtn", delay: 500, t: "유닛 2기 준비 완료", b: "근접 유닛과 원거리 유닛이 모였어요. 오른쪽 위 ✕ 버튼으로 슬롯을 닫고 배치를 해 볼게요." },
+        { id: "front", el: '#allyField', mark: () => uEl(T.mel), drag: [() => uEl(T.mel), () => zoneEl()], act: () => T.mel.fx >= FRONT_X, when: () => pickUnits(), enter: () => swapStart(), allow: () => uEl(T.mel), zone: "front", delay: 500, noAbsorb: true, t: "근접 유닛은 앞줄로", b: "어라, 자리가 뒤바뀌었네요! 근접 유닛은 앞에서 적을 막아야 해요. 반짝이는 근접 유닛을 끌어서 오른쪽 앞줄 칸에 놓아 주세요." },
+        { id: "back", el: '#allyField', mark: () => uEl(T.rng), drag: [() => uEl(T.rng), () => zoneEl()], act: () => T.rng.fx <= BACK_X, when: () => pickUnits(), enter: () => unstack(), allow: () => uEl(T.rng), zone: "back", delay: 500, noAbsorb: true, t: "원거리 유닛은 뒷줄로", b: "원거리 유닛은 뒤에서 안전하게 공격하는 게 좋아요. 반짝이는 원거리 유닛을 왼쪽 뒷줄 칸으로 옮겨 주세요." },
+        { id: "placed", el: '#allyField', t: "완벽한 배치!", b: "앞줄이 적을 막는 동안 뒷줄이 사거리 밖에서 공격해요. 배치는 준비 단계에서 언제든 다시 바꿀 수 있어요." },
+        { id: "go", el: '#waveMark', act: () => G.phase === 'fight', allow: "#waveMark", t: "전투 시작!", b: "오른쪽의 ☠️ W1 표시를 탭하면 적이 몰려와요." },
+        { id: "fight", act: () => G.phase !== 'fight' && !G.retT, mode: "tip", delay: 900, t: "자동 전투", b: "유닛들이 알아서 싸워요. 적이 왼쪽 끝까지 오면 🛡️ 하트 보호막이 깎여요. 가끔 유닛이 필살기를 써요!" },
+        { id: "won", el: '#battleMsg', when: () => G.wave >= 2, t: "첫 웨이브 승리!", b: "이기면 💰 골드 · 🎰 스핀 · 🔷 정수 · 💎 기원석을 받아요. 쓰러진 유닛도 다시 일어나요." },
+        { id: "lost", el: '.top-bar', when: () => G.wave < 2, alt: true, t: "괜찮아요, 다시 해 봐요", b: "지면 ❤️ 생명 1개를 쓰고 재정비 보급을 받아요. 흡수와 상점으로 전력을 보강한 뒤 다시 도전하세요." },
+        { id: "gift", el: '#allyField', mark: () => uEl(T.gift), when: () => pickUnits(true), enter: () => giveGift(), t: "흡수 연습용 선물", b: "같은 계열 유닛 1기를 선물했어요! 흡수는 유닛 하나를 재료로 써서 다른 유닛을 더 강하게 만드는 기능이에요." },
+        { id: "absorb", el: '#allyField', mark: () => uEl(T.mel), drag: [() => uEl(T.gift), () => uEl(T.mel)], act: () => $('absorbChoice').classList.contains('show'), when: () => T.gift && T.mel && G.units.includes(T.mel) && (G.units.includes(T.gift) || G.bench.includes(T.gift)), enter: () => { T.n0 = G.units.length + G.bench.length; }, allow: () => uEl(T.gift), t: "끌어다 겹치면 흡수", b: "선물받은 유닛을 끌어서 반짝이는 근접 유닛 위에 겹쳐 놓아 보세요." },
+        { id: "absorbOk", el: '#absorbChoice .rs-card', hand: '#absorbChoiceList button', act: () => !$('absorbChoice').classList.contains('show'), next: () => (G.units.length + G.bench.length < T.n0) ? 'absorbed' : 'absorb', allow: "#absorbChoice", over: "#absorbChoice", side: "right", delay: 350, t: "흡수 확인", b: "흡수하면 레벨이 오르고, 재료 유닛의 고유 각인(특수 능력)을 이어받아요. ✅ 흡수하기를 눌러 확정하세요." },
+        { id: "absorbed", el: '#unitBoard', t: "흡수 완료!", b: "레벨이 오르고 각인이 생겼어요. 레벨이 오를수록 ★이 늘고, ★2가 되면 전직 루트를 고를 수 있어요. 유닛을 탭하면 자세히 볼 수 있어요." },
+        { id: "shop", el: '#shopBtn', act: () => $('shopPanel').classList.contains('open'), enter: () => topUpEssence(), allow: "#shopBtn", delay: 450, t: "아이템 상점", b: "이번엔 상점을 써 볼게요. 아래의 상점 버튼을 눌러 주세요." },
+        { id: "buy", el: '#shopList', hand: '#shopList .buy:not([disabled]):not([data-reroll])', act: () => equippedCount() > T.eq0 || G.essence <= T.ess0 - 5, enter: () => shopItems(), allow: "#shopPanel", over: "#shopPanel", side: "left", delay: 600, t: "아이템 사기", b: "🔷 정수로 아이템을 사요. 장착하는 패시브 아이템은 전투 내내 효과가 있어요. 보라색 가격 버튼을 눌러 하나 사 보세요." },
+        { id: "bought", el: '#shopPanel .shop-tabs', over: "#shopPanel", t: "구매 완료!", b: "같은 아이템을 또 사면 레벨이 올라요. 업그레이드 탭에서는 💎 기원석으로 영구 강화를 해금하고, 도감 탭에서는 모은 유닛을 볼 수 있어요." },
+        { id: "shopClose", el: '#shopPanel', hand: '#shopClose', act: () => !$('shopPanel').classList.contains('open'), allow: "#shopClose", over: "#shopPanel", delay: 450, t: "상점 닫기", b: "오른쪽 위 ✕ 버튼으로 상점을 닫아 주세요." },
+        { id: "slots", el: '#coreStatus2', t: "아이템 칸", b: "산 아이템은 여기 아이템 칸에 장착돼요. 칸을 탭하면 효과를 볼 수 있어요. 스핀을 쌓으면 위쪽 코어 칸에 특별한 규칙도 고를 수 있어요." },
+        { id: "done", last: true, t: "준비 완료!", b: "이제 직접 해 보세요. 튜토리얼은 옵션에서 언제든 다시 볼 수 있어요." },
+      ];
+      const phone = document.querySelector('.phone'), root = document.createElement('div');
+      root.id = 'tut';
+      root.innerHTML = '<div class="tut-hole none"></div><div class="tut-zone"><span></span></div><div class="tut-mark"></div><div class="tut-hand">👆</div><div class="tut-bub"><div class="tut-por"></div><div class="tut-txt"><div class="tut-top"><b class="tut-ttl"></b><span class="tut-no"></span></div><p class="tut-body"></p><div class="tut-btns"><button type="button" class="tut-skip">건너뛰기</button><button type="button" class="tut-next">다음 ▶</button></div></div></div>';
+      phone.appendChild(root);
+      if (ART.Sorcerer || ART.Mage) root.style.setProperty('--tutp', `url("${ART.Sorcerer || ART.Mage}")`);
+      const hole = root.querySelector('.tut-hole'), hand = root.querySelector('.tut-hand'), bub = root.querySelector('.tut-bub'), zone = root.querySelector('.tut-zone'), mark = root.querySelector('.tut-mark');
+      const zoneEl = () => zone; // 끌기 손가락의 도착점
+      let on = false, idx = -1, st = null, doneAt = 0, raf = 0, sleeping = false, tipHide = false;
+      const BLOCK = '.result-screen.show, .cutin, .opt-screen.show, .title-screen.show, #shopPanel.open, #detailPanel.open';
+      const busy = () => [...document.querySelectorAll(BLOCK)].some(e => !(st && st.over && e.matches(st.over)));
+      const val = v => typeof v === 'function' ? v() : v;
+      function go(id) { const i = STEPS.findIndex(s => s.id === id); enter(i < 0 ? idx + 1 : i); }
+      function enter(i) {
+        idx = i;
+        while (idx < STEPS.length && STEPS[idx].when && !STEPS[idx].when()) idx++;
+        if (idx >= STEPS.length) return finish();
+        st = STEPS[idx]; doneAt = 0; tipHide = false;
+        try { st.enter && st.enter(); } catch (e) { console.warn('TUT', e); }
+        root.querySelector('.tut-ttl').textContent = st.t;
+        root.querySelector('.tut-body').textContent = st.b;
+        root.querySelector('.tut-no').textContent = `${STEPS.slice(0, idx).filter(x => !x.alt).length + (st.alt ? 0 : 1)} / ${STEPS.filter(x => !x.alt).length}`;
+        root.querySelector('.tut-next').textContent = st.last ? '확인' : st.mode === 'tip' ? '닫기' : '다음 ▶';
+        root.querySelector('.tut-skip').style.visibility = st.last ? 'hidden' : '';
+        zone.querySelector('span').textContent = st.zone === 'front' ? '앞줄 (근접)' : '뒷줄 (원거리)';
+        root.className = 'on' + (st.act && st.mode !== 'tip' ? ' act' : '') + (st.mode === 'tip' ? ' tip' : '') + (sleeping ? ' sleep' : '');
+        bub.style.display = '';
+        bub.classList.remove('pop'); void bub.offsetWidth; bub.classList.add('pop');
+        place();
+      }
+      function rectOf(sel, pr) {
+        const e = typeof sel === 'function' ? sel() : (typeof sel === 'string' ? document.querySelector(sel) : sel); if (!e || !e.getBoundingClientRect) return null;
+        const b = e.getBoundingClientRect(); if (!b.width || !b.height) return null;
+        return { l: b.left - pr.left, t: b.top - pr.top, w: b.width, h: b.height };
+      }
+      function place() {
+        const pr = phone.getBoundingClientRect(), W = pr.width, H = pr.height, pad = 6;
+        const r = st.mode === 'tip' ? null : rectOf(val(st.el), pr);
+        if (r) {
+          const l = Math.max(2, r.l - pad), t = Math.max(2, r.t - pad), rr = Math.min(W - 2, r.l + r.w + pad), bb = Math.min(H - 2, r.t + r.h + pad);
+          Object.assign(hole.style, { left: l + 'px', top: t + 'px', width: (rr - l) + 'px', height: (bb - t) + 'px' }); hole.classList.remove('none');
+        } else { Object.assign(hole.style, { left: W / 2 + 'px', top: H / 2 + 'px', width: '0px', height: '0px' }); hole.classList.add('none'); }
+        // 배치 칸 (앞줄/뒷줄): 땅 기준 % 좌표
+        const af = st.zone ? rectOf('#allyField', pr) : null;
+        if (af) {
+          const a = st.zone === 'front' ? FRONT_X : 5, b = st.zone === 'front' ? PLACE_MAX : BACK_X;
+          Object.assign(zone.style, { left: (af.l + af.w * a / 100 - 14) + 'px', width: (af.w * (b - a) / 100 + 28) + 'px', top: (af.t + 6) + 'px', height: (af.h - 12) + 'px' });
+          zone.classList.add('show'); zone.classList.toggle('ok', !!doneAt);
+        } else zone.classList.remove('show');
+        // 콕 집어 주는 테두리
+        const mr = st.mark && !doneAt ? rectOf(st.mark, pr) : null;
+        if (mr) { const s = Math.max(mr.w, mr.h) * 0.9; Object.assign(mark.style, { left: (mr.l + mr.w / 2 - s / 2) + 'px', top: (mr.t + mr.h / 2 - s / 2) + 'px', width: s + 'px', height: s + 'px' }); mark.classList.add('show'); }
+        else mark.classList.remove('show');
+        // 손가락: 끌기(시작 → 끝) 또는 눌러 볼 곳
+        let handTop = 0, handBot = 0;
+        const dr = st.drag && !doneAt ? [rectOf(st.drag[0], pr), rectOf(st.drag[1], pr)] : null;
+        if (dr && dr[0] && dr[1]) {
+          const x0 = dr[0].l + dr[0].w / 2, y0 = dr[0].t + dr[0].h * 0.55, x1 = dr[1].l + dr[1].w / 2, y1 = dr[1].t + Math.min(dr[1].h * 0.55, dr[1].h - 30);
+          hand.textContent = '👆'; hand.className = 'tut-hand drag'; hand.style.left = x0 + 'px'; hand.style.top = y0 + 'px';
+          hand.style.setProperty('--dx', (x1 - x0) + 'px'); hand.style.setProperty('--dy', (y1 - y0) + 'px');
+        } else {
+          const hr = st.act && st.mode !== 'tip' && !st.drag ? (rectOf(val(st.hand) || val(st.el), pr) || r) : null;
+          if (hr && st.side) { // 옆에서 가리키기 (카드 안 버튼 등)
+            const L = st.side === 'left'; hand.textContent = L ? '👉' : '👈'; hand.className = 'tut-hand side';
+            hand.style.left = (L ? hr.l - 20 : hr.l + hr.w + 20) + 'px'; hand.style.top = (hr.t + hr.h / 2 - 16) + 'px';
+          } else if (hr) {
+            const down = hr.t + hr.h / 2 > H * 0.62 || (st.hand && hr.t + hr.h + 44 > H);
+            hand.textContent = down ? '👇' : '👆'; hand.className = 'tut-hand' + (down ? ' dn' : '');
+            hand.style.left = (hr.l + hr.w / 2) + 'px'; hand.style.top = (down ? hr.t - 36 : hr.t + hr.h + 2) + 'px';
+            if (!st.hand) { if (down) handTop = 40; else handBot = 40; }
+          } else hand.className = 'tut-hand';
+          hand.style.display = hr ? '' : 'none';
+        }
+        if (dr) hand.style.display = dr[0] && dr[1] ? '' : 'none';
+        // 말풍선: 강조한 곳을 가리지 않게 위/아래 중 넓은 쪽에
+        const bh = bub.offsetHeight; let top;
+        if (st.mode === 'tip') { const tb = document.querySelector('.top-bar').getBoundingClientRect(); top = tb.bottom - pr.top + 8; }
+        else if (!r) top = (H - bh) / 2;
+        else {
+          const above = r.t - pad - handTop, below = H - (r.t + r.h + pad) - handBot;
+          top = below >= above ? Math.min(H - bh - 8, r.t + r.h + pad + 12 + handBot) : Math.max(8, r.t - pad - 12 - handTop - bh);
+        }
+        bub.style.top = Math.max(8, top) + 'px';
+      }
+      function frame(now) {
+        raf = on ? requestAnimationFrame(frame) : 0; if (!on || !st) return;
+        if (st.act && !doneAt && st.act()) doneAt = now; // 조건은 창이 열려 있어도 확인 (예: 흡수 창이 뜨면 다음 단계)
+        if (doneAt && now - doneAt >= (st.delay || 0)) { const nx = st.next && st.next(); if (nx) go(nx); else enter(idx + 1); return; }
+        const zz = busy(); if (zz !== sleeping) { sleeping = zz; root.classList.toggle('sleep', zz); }
+        if (!sleeping) place();
+      }
+      function start() { on = true; sleeping = false; Object.assign(T, { mel: null, rng: null, gift: null, swapped: false }); enter(0); if (!raf) raf = requestAnimationFrame(frame); }
+      function stop() { on = false; st = null; root.className = ''; G.tutPick = null; }
+      function finish() { stop(); META.tut = true; saveMeta(); }
+      // 튜토리얼 중에는 안내하는 곳만 누를 수 있게 (전투 중 말풍선 단계는 제한 없음)
+      const guard = e => {
+        if (!on || !st || sleeping || st.mode === 'tip') return;
+        const t = e.target; if (!t || !t.closest) return;
+        if (t.closest('#tut .tut-bub, #menuBtn, #pauseMenu, #optScreen')) return; // 메뉴·옵션은 언제든
+        const al = typeof st.allow === 'function' ? st.allow() : st.allow;
+        if (al && (typeof al === 'string' ? t.closest(al) : al.contains && al.contains(t))) return;
+        e.stopPropagation(); if (e.cancelable) e.preventDefault();
+      };
+      ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(ev => document.addEventListener(ev, guard, { capture: true, passive: false }));
+      root.querySelector('.tut-next').addEventListener('click', () => { if (!st) return; if (st.mode === 'tip') { tipHide = true; bub.style.display = 'none'; return; } if (st.last) finish(); else enter(idx + 1); });
+      root.querySelector('.tut-skip').addEventListener('click', () => { finish(); battleMsg.textContent = '튜토리얼 종료'; });
+      function restart() { // 처음부터 다시 (스테이지 1 Easy 새 판)
+        META.tut = false; saveMeta();
+        document.querySelectorAll('.result-screen.show, .opt-screen.show').forEach(x => x.classList.remove('show'));
+        try { closeShop(); } catch (e) {} try { closeDetail(); } catch (e) {} try { closePanel(); } catch (e) {}
+        TITLE.hide(); lbDiff = 0; startRun(0, 0);
+      }
+      // 테스트용 단축키: T = 튜토리얼 처음부터 · N = 다음 단계로 강제 진행 · Esc = 튜토리얼 끝내기
+      document.addEventListener('keydown', e => {
+        if (e.ctrlKey || e.metaKey || e.altKey || (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) && e.target.type !== 'range')) return;
+        const k = e.key.toLowerCase();
+        if (k === 't') restart();
+        else if (k === 'n' && on) { if (st && st.last) finish(); else enter(idx + 1); }
+        else if (e.key === 'Escape' && on) { finish(); e.preventDefault(); }
+      });
+      return { start, stop, restart, get on() { return on; }, get step() { return idx; }, get id() { return st && st.id; }, get noAbsorb() { return !!(on && st && st.noAbsorb); }, T };
+    })();
+    // 옵션의 '튜토리얼 다시 보기': 게임 중이면 한 번 더 눌러야 시작 (진행 중인 판이 끝나므로)
+    { let armT = 0; const b = $('optTut');
+      b.addEventListener('click', () => {
+        const inRun = !$('titleScreen').classList.contains('show') && !$('lobby').classList.contains('show') && G.phase !== 'over' && (G.units.length > 0 || G.wave > 1);
+        if (inRun && !b.classList.contains('warn')) { b.classList.add('warn'); b.textContent = '⚠ 지금 판을 끝내고 시작할까요? 한 번 더 누르세요'; clearTimeout(armT); armT = setTimeout(() => { b.classList.remove('warn'); b.textContent = '📖 튜토리얼 다시 보기'; }, 3500); return; }
+        clearTimeout(armT); b.classList.remove('warn'); b.textContent = '📖 튜토리얼 다시 보기'; TUT.restart();
+      });
+    }
+    // ========== 게임 중 메뉴 (일시정지) ==========
+    const PAUSE = (() => {
+      const el = $('pauseMenu'); let ask = null;
+      const inRun = () => G.phase !== 'over'; // 진행 중인 판 (게임 오버면 확인 없이 나감)
+      function open() {
+        if (el.classList.contains('show')) return;
+        G.paused = true; ask = null; el.classList.remove('ask');
+        const st = G.stage >= 0 ? STAGES[G.stage] : null;
+        $('pmInfo').textContent = (st ? `${st.ic} ${st.n} (${DIFFS[G.diff].n})` : '♾️ 무한 모드') + ` · Wave ${G.wave}` + (G.phase === 'fight' ? '\n전투 중 · 메뉴를 닫으면 이어서 싸워요' : '');
+        el.classList.add('show');
+        try { SET.vib && navigator.vibrate && navigator.vibrate(10); } catch (e) {}
+      }
+      function close() { el.classList.remove('show', 'ask'); ask = null; G.paused = false; }
+      function leave(to) { // 이번 판 정리 후 이동 (💎·최고 기록은 웨이브마다 이미 저장됨)
+        close(); TUT.stop(); clearInterval(retTimer); G.retT = 0;
+        try { closePanel(); } catch (e) {} try { closeShop(); } catch (e) {} try { closeDetail(); } catch (e) {}
+        document.querySelectorAll('.result-screen.show').forEach(x => x.classList.remove('show'));
+        const s = G.stage, d = G.diff;
+        if (to === 'restart') { startRun(s, d); return; }
+        resetGame();
+        if (to === 'title') TITLE.show();
+        else { if (s >= 0) { lbSel = s; lbDiff = d; } else lbSel = -1; $('lobby').classList.add('show'); renderLobby(); }
+      }
+      const Q = { title: '이번 판을 그만두고 메인 메뉴로 갈까요?', lobby: '이번 판을 그만두고 스테이지 선택으로 갈까요?', restart: '이번 판을 처음부터 다시 시작할까요?' };
+      el.addEventListener('click', e => {
+        if (e.target === el) { if (!ask) close(); return; } // 바깥을 누르면 계속하기
+        const b = e.target.closest('[data-a]'); if (!b) return;
+        const a = b.dataset.a;
+        if (a === 'resume') close();
+        else if (a === 'opt') openOpt();
+        else if (a in Q) {
+          if (!inRun()) return leave(a);
+          ask = a; $('pmQ').textContent = Q[a]; $('pmYes').textContent = a === 'restart' ? '다시 시작' : '나가기'; el.classList.add('ask');
+        }
+        else if (a === 'no') { ask = null; el.classList.remove('ask'); }
+        else if (a === 'yes' && ask) leave(ask);
+      });
+      $('menuBtn').addEventListener('click', open);
+      const inGame = () => !$('titleScreen').classList.contains('show') && !$('lobby').classList.contains('show');
+      document.addEventListener('keydown', e => { // PC: Esc · P = 메뉴 열기/닫기
+        if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+        const k = e.key.toLowerCase(); if (k !== 'escape' && k !== 'p') return;
+        if ($('optScreen').classList.contains('show')) { if (k === 'escape') closeOpt(); return; }
+        if (el.classList.contains('show')) { if (ask) { ask = null; el.classList.remove('ask'); } else close(); return; }
+        if (inGame() && !(k === 'escape' && TUT.on)) open();
+      });
+      return { open, close, get on() { return el.classList.contains('show'); } };
     })();
     loadMeta();
     renderLobby();
