@@ -2792,7 +2792,16 @@
       const SRC = { field: 'music/Morning_at_Willow_Creek.mp3', boss: 'music/Crown_of_the_Obsidian_Gate.mp3', fall: 'music/The_Fallen_Crest.mp3' };
       const A = {}; let cur = null, want = 'field', unlocked = false, fadeT = 0;
       const level = () => { try { return SET.bgm ? Math.pow(SET.bgmVol / 100, 1.5) * 0.7 : 0; } catch (e) { return 0; } };
-      function el(k) { if (!A[k]) { const a = new Audio(); a.src = SRC[k]; a.loop = true; a.preload = 'auto'; a.volume = 0; a.addEventListener('error', () => { a.bad = true; }); A[k] = a; } return A[k]; }
+      // 아이폰처럼 음악 볼륨을 못 바꾸는 기기: 곡을 웹 오디오 볼륨 조절기(gain)에 연결해서 옵션 볼륨이 듣게 함
+      const volFixed = (() => { try { const t = new Audio(); t.volume = 0.5; return Math.abs(t.volume - 0.5) > 0.01; } catch (e) { return false; } })();
+      let actx = null;
+      function route(a) {
+        if (!volFixed || a._g) return;
+        try { const AC = window.AudioContext || window.webkitAudioContext; actx = actx || new AC(); const src = actx.createMediaElementSource(a), g = actx.createGain(); g.gain.value = 0; src.connect(g); g.connect(actx.destination); a._g = g; } catch (e) {}
+      }
+      const getV = a => a._g ? a._g.gain.value : a.volume;
+      const setV = (a, v) => { try { if (a._g) a._g.gain.value = v; else a.volume = v; } catch (e) {} };
+      function el(k) { if (!A[k]) { const a = new Audio(); a.src = SRC[k]; a.loop = true; a.preload = 'auto'; a.volume = 0; a.addEventListener('error', () => { a.bad = true; }); route(a); A[k] = a; } return A[k]; }
       const play = a => { if (a.bad) return; const p = a.play(); if (p && p.catch) p.catch(() => {}); };
       // 한 번에 한 곡만 재생. 곡을 바꿀 때는 이전 곡을 즉시 멈추고 새 곡을 바로 켭니다 (아이폰은 터치한 순간에만 새 곡 재생을 허락하는 경우가 있음)
       function tick() {
@@ -2801,8 +2810,8 @@
         Object.keys(A).forEach(k => { if (k !== cur && !A[k].paused) A[k].pause(); });
         const a = cur && el(cur); if (!a) return;
         if (L <= 0) { if (!a.paused) a.pause(); return; }
-        if (a.paused) { try { a.volume = 0; } catch (e) {} play(a); }
-        const v = a.volume; try { a.volume = v < L ? Math.min(L, v + 0.05) : Math.max(L, v - 0.05); } catch (e) {} // 소리 크기를 부드럽게 (아이폰은 볼륨 고정)
+        if (a.paused) { setV(a, 0); play(a); }
+        const v = getV(a); setV(a, v < L ? Math.min(L, v + 0.05) : Math.max(L, v - 0.05)); // 소리 크기를 부드럽게
       }
       function apply() { cur = want; tick(); }
       function set(k) {
@@ -2812,6 +2821,7 @@
         tick(); // 터치(웨이브 시작 버튼) 안에서 바로 재생 시작
       }
       function unlock() { // 모든 터치마다: 처음엔 곡들의 재생 허락을 받아 두고, 막혀 있던 곡이 있으면 다시 시도
+        if (actx && actx.state !== 'running') { try { actx.resume(); } catch (e) {} }
         if (!unlocked) {
           unlocked = true; cur = want;
           Object.keys(SRC).forEach(k => { if (k === cur) return; const b = el(k); b.muted = true; const p = b.play(); const done = () => { if (k !== cur) b.pause(); b.muted = false; }; if (p && p.then) p.then(done).catch(() => { b.muted = false; }); else done(); });
@@ -2821,7 +2831,7 @@
       }
       ['pointerdown', 'touchstart', 'keydown'].forEach(ev => window.addEventListener(ev, unlock, { capture: true, passive: true }));
       document.addEventListener('visibilitychange', () => { if (document.hidden) Object.values(A).forEach(a => a.pause()); else tick(); });
-      return { set, apply, get track() { return want; }, get audio() { return A; } };
+      return { set, apply, get track() { return want; }, get audio() { return A; }, get webAudio() { return volFixed; } };
     })();
 
     // ========== 유틸 / HUD ==========
