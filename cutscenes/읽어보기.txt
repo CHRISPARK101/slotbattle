@@ -1,0 +1,20 @@
+SLOT BATTLE 컷신 폴더
+
+slotbattle_final.html(게임 파일) 바로 옆에 music 폴더처럼 이 cutscenes 폴더를 두세요. (폴더 이름은 꼭 cutscenes)
+
+opening/img/O1~O7, O2b.jpg   오프닝 그림 (O4b·O4c는 코드 애니메이션이라 그림 없음)
+ending/img/N1~N7, T1~T9, T1b.jpg   엔딩 그림 (영상이 없거나 재생이 막힐 때도 이 그림이 쓰임)
+  T1 = 돌빛 정지의 왕, T1b = 같은 구도의 첫 번째 영웅 (왕관이 깨지며 T1 → T1b로 바뀜)
+ending/vid/컷ID.mp4     엔딩 영상 (H.264, 소리 없음)
+stage/img/S1-1~S6-2.jpg   스테이지 시작 컷 (그 스테이지에 처음 들어갈 때 한 번)
+stage/img/E1~E5.jpg       해방 컷 (1~5스테이지를 처음 클리어할 때 한 번, 끝에 하트 칸 n/6)
+stage/vid/E1, E3, S5-1.mp4   스테이지 컷 영상 (5B 2초 영상을 절반 속도로)
+
+영상 바꾸기/추가: vid 폴더에 컷ID.mp4 이름으로 넣기만 하면 됩니다.
+
+운명륜은 그림에 넣지 않습니다 (게임 코드가 그림 위에 그림).
+
+바로 확인하기: 게임 주소 끝에
+  ?cs=O (오프닝) / ?cs=N (일반 엔딩) / ?cs=T (진엔딩)
+  ?cs=S1 ~ ?cs=S6 (스테이지 시작) / ?cs=E1 ~ ?cs=E5 (해방)
+  &at=컷ID 를 붙이면 그 컷부터 (예: ?cs=O&at=O4b)
