@@ -1481,6 +1481,8 @@
     .actor.bench-actor.over { opacity: 1; outline: 0; background: none; padding: 0; }
     .bench-actor.over img { opacity: .9; filter: drop-shadow(0 0 4px rgba(255,92,147,.9)); }
     @keyframes overTag { 50% { transform: translateX(-50%) scale(1.1); } }
+    #slotPanel .reel-arrows.on button::before { background: #ff5c93; filter: drop-shadow(0 0 4px rgba(255,92,147,.9)); animation-name: arrowBlinkPink; } /* 넛지 화살표: 루미의 분홍 불씨 */
+    @keyframes arrowBlinkPink { 50% { background: #ffb3cf; transform: translate(-50%, 2px); } }
     .t-menu .t-sub { position: absolute; bottom: 100%; margin: 0 0 10px; font-size: 12.5px; white-space: nowrap; } /* 문구는 PLAY 버튼 바로 위: 루미 얼굴을 가리지 않게 */
     @media (max-height: 720px) { .t-heroes { top: 41%; } .t-menu { top: 64%; gap: 10px; } .t-play { height: 56px; font-size: 28px; } .t-opt { height: 42px; } .t-foot { bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); } }
     .t-strip span img { width: 40px; height: 40px; object-fit: contain; filter: drop-shadow(0 1px 0 rgba(0,0,0,.45)); }
