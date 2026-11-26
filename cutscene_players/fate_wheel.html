@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>운명륜 바퀴</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;800&family=Noto+Sans+KR:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: 게임 제작용 작업 도구, 조용하고 정확하게
+   IDEA: 극장판 오프닝의 하늘 한 장면을 그대로 띄워 놓은 시사실 스크린
+   PICTURE: 노을 하늘 위에서 도는 황금 운명륜 (셀 애니식 SVG, 완전 대칭)
+   COLOUR and TYPE: 밤하늘 남색 바탕 + 황금, Noto Serif KR 제목 / Noto Sans KR 본문
+   LAYOUT: 위 제목 한 줄, 16:9 스크린, 아래 조절판과 게임용 코드 */
+:root{color-scheme:dark;--bg:#0d1730;--panel:#15223f;--line:#2b3b62;--ink:#f3ead6;--mute:#a9b3cc;--gold:#e9bf5c}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Noto Sans KR",system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(20px,3vw,40px) max(4vw,16px);max-width:1240px;margin:0 auto}
+h1{font:800 clamp(28px,4vw,40px)/1.1 "Noto Serif KR",serif;margin:0 0 6px;color:var(--gold)}
+.lead{margin:0 0 18px;color:var(--mute)}
+.stage{position:relative;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:
+ linear-gradient(180deg,#13264a 0%,#33517f 32%,#d9956a 60%,#f6d6a2 69%,#7f8a62 69.5%,#3e5a3c 82%,#253b2a 100%);background-size:cover;background-position:center;box-shadow:0 20px 50px rgba(0,0,0,.45)}
+.stage.img{background-color:#000}
+.hills{position:absolute;inset:auto 0 0 0;width:100%;height:42%}
+.wheel{position:absolute;width:var(--s,36%);aspect-ratio:1;left:var(--x,50%);top:var(--y,32%);transform:translate(-50%,-50%)}
+.wheel svg{width:100%;height:100%;display:block;overflow:visible}
+.ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 22px;margin-top:20px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+label{display:grid;gap:4px;font-size:14px;color:var(--mute)}
+label b{color:var(--ink);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--gold);height:28px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.chk{display:flex;gap:8px;align-items:center;font-size:15px;color:var(--ink);min-height:44px}
+.chk input{width:20px;height:20px;accent-color:var(--gold)}
+button,.file{font:600 15px "Noto Sans KR",sans-serif;min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:#1d2d52;color:var(--ink);cursor:pointer;display:inline-flex;align-items:center}
+button.main{background:var(--gold);color:#2a1a04;border-color:var(--gold)}
+button:focus-visible,.file:focus-within,input:focus-visible{outline:3px solid #ffd98a;outline-offset:2px}
+.file input{position:absolute;opacity:0;width:1px;height:1px}
+.acts{margin-top:14px}
+h2{font:600 20px/1.3 "Noto Serif KR",serif;margin:32px 0 8px;color:var(--gold)}
+pre{overflow-x:auto;background:#0a1124;border:1px solid var(--line);border-radius:10px;padding:14px;font-size:13px;line-height:1.5;max-height:360px}
+.note{font-size:14px;color:var(--mute)}
+dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;max-width:min(92vw,640px)}
+dialog img{width:100%;background:repeating-conic-gradient(#2a3556 0 25%,#1d2745 0 50%) 0 0/24px 24px;border-radius:8px}
+@media(max-width:600px){.ctl{padding:14px}}
+</style>
+</head>
+<body>
+<div class="band">
+ <h1>운명륜 바퀴</h1>
+ <p class="lead">O1·N4·T8 컷에 합성할 황금 톱니바퀴예요. 90년대 셀 애니처럼 단색 바탕에 경계가 딱 떨어지는 그림자와 하이라이트, 굵은 외곽선으로 칠했어요. 빛은 왼쪽 위에 고정이라 바퀴가 돌아도 반짝임은 제자리에 있어요.</p>
+
+ <div class="stage" id="stage">
+  <svg class="hills" viewBox="0 0 1600 400" preserveAspectRatio="none" aria-hidden="true">
+   <path d="M0,170 L180,90 L330,150 L520,60 L700,140 L880,80 L1060,150 L1250,70 L1420,130 L1600,90 L1600,400 L0,400Z" fill="#6f7d8f" opacity=".55"/>
+   <path d="M0,240 C200,190 380,230 560,200 S900,170 1120,215 S1450,190 1600,210 L1600,400 L0,400Z" fill="#3e5a3c" opacity=".8"/>
+  </svg>
+  <div class="wheel" id="wheel"></div>
+ </div>
+
+ <div class="ctl">
+  <label>크기 <b id="vS">36%</b><input id="s" type="range" min="10" max="90" value="36"></label>
+  <label>회전 속도 <b id="vV">8°/초</b><input id="v" type="range" min="0" max="60" value="8"></label>
+  <label>가로 위치 <b id="vX">50%</b><input id="x" type="range" min="0" max="100" value="50"></label>
+  <label>세로 위치 <b id="vY">32%</b><input id="y" type="range" min="0" max="100" value="32"></label>
+  <label>후광 <b id="vG">60%</b><input id="g" type="range" min="0" max="100" value="60"></label>
+  <div>
+   <label class="chk"><input id="inner" type="checkbox" checked> 안쪽 고리 반대로 돌기</label>
+   <label class="chk"><input id="crack" type="checkbox"> 금 간 바퀴 (O4 전쟁 장면)</label>
+  </div>
+ </div>
+
+ <div class="row acts">
+  <label class="file">배경 그림 불러오기<input id="bg" type="file" accept="image/*"></label>
+  <button id="bgReset">기본 하늘로</button>
+  <button id="png" class="main">투명 PNG 만들기</button>
+ </div>
+ <p class="note">Stable Diffusion으로 뽑은 O1 배경(바퀴 없는 하늘)을 불러오면 실제 컷처럼 미리 볼 수 있어요.</p>
+
+ <h2>게임에 넣는 코드</h2>
+ <p class="note">아래 두 함수를 SLOT BATTLE HTML에 넣고, 컷신 화면의 하늘 위치에 바퀴 상자를 놓으면 돼요.</p>
+ <div class="row"><button id="copy">코드 복사</button><span class="note" id="copied" aria-live="polite"></span></div>
+ <pre id="code"></pre>
+</div>
+
+<dialog id="dlg">
+ <p><b>투명 PNG (1024×1024)</b></p>
+ <img id="out" alt="투명 배경의 운명륜 PNG">
+ <p class="note">그림을 길게 누르거나 오른쪽 클릭해서 저장하세요. 이 화면 안에서는 바로 다운로드가 막혀 있어요.</p>
+ <button id="close">닫기</button>
+</dialog>
+
+<script id="lib">
+// 운명륜 (90년대 셀 애니 금속 칠): 단색 바탕 + 경계가 딱 떨어지는 그림자·하이라이트 + 굵은 외곽선 + 고정된 반짝임
+// 빛은 화면 왼쪽 위에서 고정. 바퀴가 돌아도 그림자·하이라이트·반짝임은 제자리에 있다
+function fateWheelSVG(o = {}) {
+  const id = o.id || 'fw', T = Math.PI * 2;
+  const C = { base: '#e6ab3e', band: '#c88a2b', shade: '#a6611a', hi: '#fff2b8', deep: '#5e3610', line: '#2e1a06' };
+  const f = n => n.toFixed(1);
+  const P = (r, a) => f(r * Math.cos(a)) + ',' + f(r * Math.sin(a));
+  const circ = (r, cx = 0, cy = 0) => `M${f(cx + r)},${f(cy)}a${r},${r} 0 1,0 ${-2 * r},0a${r},${r} 0 1,0 ${2 * r},0Z`;
+  const N = 36, p = T / N; let teeth = 'M';
+  for (let i = 0; i < N; i++) { const a = i * p; teeth += [P(440, a), P(490, a + .2 * p), P(490, a + .45 * p), P(440, a + .65 * p)].join('L') + 'L'; }
+  teeth = teeth.slice(0, -1) + 'Z' + circ(400);
+  let spokes = '';
+  for (let i = 0; i < 12; i++) spokes += `<path transform="rotate(${i * 30})" fill-rule="evenodd" d="M118,-18C190,-32 270,-8 352,-27L352,27C270,8 190,32 118,18Z M198,0a42,10 0 1,0 84,0a42,10 0 1,0 -84,0Z"/>`;
+  let inner = circ(206) + circ(168), iteeth = '';
+  for (let i = 0; i < 16; i++) { const a = i * T / 16; inner += circ(7, 187 * Math.cos(a), 187 * Math.sin(a)); }
+  for (let i = 0; i < 24; i++) { const a = i * T / 24; iteeth += 'M' + [P(170, a - .075), P(150, a), P(170, a + .075)].join('L') + 'Z'; }
+  let marks = '';
+  for (let i = 0; i < 24; i++) {
+    const a = i * T / 24;
+    marks += i % 2 ? circ(6, 375 * Math.cos(a), 375 * Math.sin(a)) : 'M' + [P(389, a), P(375, a + .03), P(361, a), P(375, a - .03)].join('L') + 'Z';
+  }
+  let star = 'M';
+  for (let i = 0; i < 16; i++) star += P(i % 2 ? 40 : 84, i * T / 16 - T / 4) + (i < 15 ? 'L' : 'Z');
+  const cracks = 'M70,-30L150,-80L172,-68L240,-160L262,-150L330,-262L356,-270L420,-330L470,-376' +
+    'M-60,40L-130,110L-118,132L-200,190L-230,186L-300,270L-330,268L-390,340' +
+    'M-20,-90L-60,-170L-44,-190L-90,-280L-120,-290L-150,-400L-170,-470';
+  const spark = (x, y, r) => `M${x},${y - r}Q${x},${y} ${x + r},${y}Q${x},${y} ${x},${y + r}Q${x},${y} ${x - r},${y}Q${x},${y} ${x},${y - r}Z`;
+  let rays = '';
+  for (let i = 0; i < 16; i++) { const a = i * T / 16; rays += 'M0,0L' + P(660, a - .035) + 'L' + P(660, a + .035) + 'Z'; }
+  const both = `<use href="#${id}O"/><use href="#${id}I"/>`;
+  const cut = (dx, dy, mid) => `<mask id="${mid}" maskUnits="userSpaceOnUse" x="-700" y="-700" width="1400" height="1400"><g fill="#fff">${both}</g><g fill="#000" transform="translate(${dx},${dy})">${both}</g></mask>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-650 -650 1300 1300">
+<defs>
+<g id="${id}O"><path d="${teeth}" fill-rule="evenodd"/><path d="${circ(400) + circ(350)}" fill-rule="evenodd"/>${spokes}<path d="${circ(258) + circ(244)}" fill-rule="evenodd"/><circle r="122"/></g>
+<g id="${id}I"><path d="${inner}" fill-rule="evenodd"/><path d="${iteeth}"/></g>
+<g id="${id}D"><path d="${circ(398) + circ(352)}" fill-rule="evenodd" fill="${C.band}"/><path d="${marks}" fill="${C.deep}"/><circle r="96" fill="${C.shade}" stroke="${C.line}" stroke-width="4"/><path d="${star}" fill="${C.base}" stroke="${C.line}" stroke-width="4" stroke-linejoin="round"/></g>
+<g id="${id}K" fill="none" stroke-linejoin="round"><path d="${cracks}" stroke="${C.line}" stroke-width="11"/><path d="${cracks}" stroke="#fffbe6" stroke-width="3"/></g>
+${cut(-16, -16, id + 'ms')}${cut(10, 10, id + 'mh')}
+<mask id="${id}cp" maskUnits="userSpaceOnUse" x="-700" y="-700" width="1400" height="1400"><g fill="#fff">${both}</g></mask>
+<radialGradient id="${id}h"><stop offset="0" stop-color="#ffe7a3" stop-opacity=".9"/><stop offset=".5" stop-color="#ffc96e" stop-opacity=".3"/><stop offset="1" stop-color="#ffbe5a" stop-opacity="0"/></radialGradient>
+<radialGradient id="${id}r"><stop offset=".15" stop-color="#fff6d0" stop-opacity=".55"/><stop offset="1" stop-color="#fff6d0" stop-opacity="0"/></radialGradient>
+</defs>
+<g class="fw-glow"><circle r="640" fill="url(#${id}h)"/><path class="fw-rays" d="${rays}" fill="url(#${id}r)"/></g>
+<g fill="${C.deep}" transform="translate(12,14)">${both}</g>
+<g fill="${C.base}">${both}</g>
+<use href="#${id}D"/>
+<g mask="url(#${id}ms)"><rect x="-700" y="-700" width="1400" height="1400" fill="${C.shade}"/></g>
+<g mask="url(#${id}mh)"><rect x="-700" y="-700" width="1400" height="1400" fill="${C.hi}"/></g>
+<g fill="none" stroke="${C.line}" stroke-width="5" stroke-linejoin="round">${both}</g>
+<use class="fw-cracks" href="#${id}K" style="display:none"/>
+<g mask="url(#${id}cp)" fill="#fffdf0" opacity=".85"><g transform="rotate(45)"><rect x="-398" y="-700" width="24" height="1400"/><rect x="-344" y="-700" width="9" height="1400"/><rect x="-170" y="-700" width="14" height="1400"/></g></g>
+<circle r="42" fill="#ffb347" stroke="${C.line}" stroke-width="4"/><circle r="28" fill="#ffe7a0"/><circle cx="-6" cy="-6" r="12" fill="#fff"/>
+<path d="${spark(-318, -318, 64) + spark(-196, -420, 30) + spark(-14, -14, 26)}" fill="#fff"/>
+</svg>`;
+}
+
+// 회전: box 안에 바퀴를 넣고 돌린다. 반환값의 속성을 바꾸면 바로 반영된다
+function startFateWheel(box, opt = {}) {
+  const id = opt.id || 'fw';
+  box.innerHTML = fateWheelSVG(opt);
+  const svg = box.querySelector('svg');
+  const outer = [svg.getElementById(id + 'O'), svg.getElementById(id + 'D'), svg.getElementById(id + 'K')];
+  const inner = svg.getElementById(id + 'I'), rays = svg.querySelector('.fw-rays'), glow = svg.querySelector('.fw-glow');
+  const st = { speed: 8, counter: true, glow: .6, cracked: false, ...opt };
+  let a = 0, b = 0, last = performance.now(), run = true;
+  function frame(t) {
+    const dt = Math.min(.1, (t - last) / 1000); last = t;
+    a += st.speed * dt; b = st.counter ? b - st.speed * 1.6 * dt : a;
+    for (const g of outer) g.setAttribute('transform', `rotate(${a.toFixed(2)})`);
+    inner.setAttribute('transform', `rotate(${b.toFixed(2)})`);
+    rays.setAttribute('transform', `rotate(${(-a * .25).toFixed(2)})`);
+    glow.setAttribute('opacity', st.glow);
+    svg.querySelector('.fw-cracks').style.display = st.cracked ? '' : 'none';
+    if (run) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  st.stop = () => { run = false; };
+  st.svg = svg;
+  return st;
+}
+</script>
+
+<script>
+{
+  const $ = id => document.getElementById(id);
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const wheel = startFateWheel($('wheel'), { id: 'demo', speed: reduce ? 0 : 8 });
+  if (reduce) { $('v').value = 0; }
+  const stage = $('stage');
+  function sync() {
+    stage.style.setProperty('--s', $('s').value + '%');
+    stage.style.setProperty('--x', $('x').value + '%');
+    stage.style.setProperty('--y', $('y').value + '%');
+    wheel.speed = +$('v').value;
+    wheel.glow = $('g').value / 100;
+    wheel.counter = $('inner').checked;
+    wheel.cracked = $('crack').checked;
+    $('vS').textContent = $('s').value + '%';
+    $('vX').textContent = $('x').value + '%';
+    $('vY').textContent = $('y').value + '%';
+    $('vV').textContent = $('v').value + '°/초';
+    $('vG').textContent = $('g').value + '%';
+  }
+  for (const k of ['s', 'v', 'x', 'y', 'g', 'inner', 'crack']) $(k).addEventListener('input', sync);
+  sync();
+
+  $('bg').addEventListener('change', e => {
+    const file = e.target.files[0]; if (!file) return;
+    stage.style.backgroundImage = `url(${URL.createObjectURL(file)})`;
+    stage.classList.add('img');
+    stage.querySelector('.hills').style.display = 'none';
+  });
+  $('bgReset').addEventListener('click', () => {
+    stage.style.backgroundImage = ''; stage.classList.remove('img');
+    stage.querySelector('.hills').style.display = '';
+  });
+
+  $('png').addEventListener('click', () => {
+    const src = new XMLSerializer().serializeToString(wheel.svg);
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas'); c.width = c.height = 1024;
+      c.getContext('2d').drawImage(img, 0, 0, 1024, 1024);
+      $('out').src = c.toDataURL('image/png');
+      try { $('dlg').showModal(); } catch { $('dlg').setAttribute('open', ''); }
+    };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(src);
+  });
+  $('close').addEventListener('click', () => $('dlg').close());
+
+  const usage = `
+
+// 사용 예: 컷신 화면에 바퀴 상자를 만들고 돌리기
+// <div id="fateWheel" style="position:absolute;left:50%;top:30%;width:36%;aspect-ratio:1;transform:translate(-50%,-50%)"></div>
+const fw = startFateWheel(document.getElementById('fateWheel'), { speed: 8 });
+// fw.speed = 20;      // 빠르게
+// fw.cracked = true;  // O4: 금 간 바퀴
+// fw.glow = 0.9;      // 후광 세게
+// fw.stop();          // 컷이 끝나면 멈추기`;
+  const code = $('lib').textContent.trim() + usage;
+  $('code').textContent = code;
+  $('copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(code); $('copied').textContent = '복사했어요.'; }
+    catch { $('copied').textContent = '복사가 막혔어요. 아래 코드를 직접 선택해서 복사하세요.'; }
+  });
+}
+</script>
+</body>
+</html>

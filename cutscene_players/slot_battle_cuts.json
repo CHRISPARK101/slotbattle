@@ -1,0 +1,91 @@
+{
+  "project": "SLOT BATTLE 컷신 이미지 (세계관 문서 > SD 프롬프트 탭 기준)",
+  "webui_api": "http://127.0.0.1:7860",
+  "settings": {
+    "checkpoint": "ERA (Esthetic Retro Anime)_v3.0(VAE).safetensors",
+    "clip_skip": 2,
+    "sampler_name": "DPM++ 2M",
+    "steps": 25,
+    "cfg_scale": 7,
+    "images_per_cut": 3,
+    "hires_fix": {
+      "enable": true,
+      "upscaler": "R-ESRGAN 4x+ Anime6B",
+      "scale": 1.5,
+      "denoising_strength": 0.4
+    },
+    "adetailer_model": "face_yolov8n.pt"
+  },
+  "sizes": {
+    "16:9": [768, 432],
+    "9:16": [432, 768],
+    "21:9": [896, 384]
+  },
+  "style_prefix": {
+    "A": "masterpiece, best quality, retro artstyle, 1980s (style), cel animation, watercolor background, soft natural lighting, muted warm colors, film grain, melancholic fantasy",
+    "B": "masterpiece, best quality, retro artstyle, 1990s (style), fantasy, detailed face, dramatic lighting, chiaroscuro, deep shadows, vivid highlights, dark colors, close-up",
+    "C": "masterpiece, best quality, retro artstyle, 1990s (style), fantasy, epic wide shot, scenery, colossal landscape, tiny figures, dramatic sky, detailed painted background"
+  },
+  "negative_prompt": "(worst quality, low quality:1.4), text, letters, logo, watermark, signature, blurry, lowres, bad anatomy, bad hands, extra fingers, nsfw",
+  "characters": {
+    "[LUMI]": "1girl, young apprentice mage, cheerful smile",
+    "[REEL MASTER]": "1other, from behind, hooded deep blue travel cloak, brass gauntlet on right hand, face not visible",
+    "[ORIGIN SLOT]": "golden ancient relic shaped like a slot machine, three reels, long lever, glowing pink heart ember in the center, on a wooden wagon with large wheels",
+    "[KING]": "tall armored knight, pale silver armor with grey stone cracks, crown of frozen starlight, long dark cloak, face in shadow, glowing pale eyes",
+    "[FIRST HERO]": "1boy, young knight, ash blonde hair, gentle grey eyes, tired expression, pale silver armor",
+    "[LUMEN]": "giant goddess made of golden light, wheel-shaped halo, serene face, glowing",
+    "[MARK]": "grey stone-like cracks on fur"
+  },
+  "notes": [
+    "[LUMI] 태그는 아직 머리색·옷 색·지팡이가 비어 있음 (튜토리얼 마법사 그림 보고 채울 예정)",
+    "motion=animatediff 인 컷은 나중에 AnimateDiff로 따로 만들 예정. 지금은 정지 그림만 생성",
+    "face=true 인 컷만 ADetailer 적용",
+    "O1과 T8의 황금 톱니바퀴는 나중에 별도 이미지로 만들어 게임 코드로 회전시킬 수 있음"
+  ],
+  "cuts": [
+    {"id": "O1", "style": "C", "ratio": "16:9", "face": false, "motion": "animatediff", "prompt": "(giant golden gear floating in the sky:1.4), (ornate golden wheel:1.2), vast green continent below, rivers, distant mountains, sunrise, light rays"},
+    {"id": "O2", "style": "A", "ratio": "16:9", "face": false, "motion": "pan", "prompt": "panoramic fantasy continent, deep forest, golden desert, temple on a lake, village festival, lanterns, dancing people, flock of birds, golden wheel faint in the clouds"},
+    {"id": "O3", "style": "B", "ratio": "9:16", "face": false, "motion": "zoom", "prompt": "[KING], upper body, frozen dust particles in the air, cold blue and grey colors"},
+    {"id": "O4", "style": "C", "ratio": "16:9", "face": false, "motion": "animatediff", "prompt": "ancient war, army of glowing heroes with banners charging up a hill, sky turning into grey stone, giant golden wheel cracking apart, scattered fragments of light"},
+    {"id": "O5", "style": "A", "ratio": "16:9", "face": false, "motion": "pan", "prompt": "quiet meadow frozen in time, grey desaturated grass, birds stopped in mid-air, farmer frozen mid-step, cracked star in the evening sky"},
+    {"id": "O6", "style": "A", "ratio": "9:16", "face": false, "motion": "zoom", "prompt": "inside a small stone shrine, [ORIGIN SLOT], [REEL MASTER], hand on the lever, dust floating in light beams"},
+    {"id": "O7", "style": "A", "ratio": "9:16", "face": true, "motion": "zoom", "prompt": "[LUMI], smiling, reaching out hand to viewer, [ORIGIN SLOT] glowing behind her, morning light"},
+
+    {"id": "S1-1", "style": "A", "ratio": "16:9", "face": false, "motion": "pan", "prompt": "ancient silent forest, autumn leaves frozen in mid-air, faint mist, distant orange torchlight of an orc camp between the trees"},
+    {"id": "S1-2", "style": "A", "ratio": "9:16", "face": false, "motion": "zoom", "prompt": "pack of wolves glaring from dark bushes, glowing red eyes, [MARK]"},
+    {"id": "S2-1", "style": "A", "ratio": "16:9", "face": false, "motion": "animatediff", "prompt": "entrance of a huge cave, crystals, stalactites, countless glowing eyes in the darkness"},
+    {"id": "S2-2", "style": "B", "ratio": "9:16", "face": false, "motion": "zoom", "prompt": "extreme close-up of a gigantic eye in a dark cave, reflection in the pupil, small travelers pulling a wooden wagon"},
+    {"id": "S3-1", "style": "C", "ratio": "16:9", "face": false, "motion": "pan", "prompt": "endless desert dunes at dusk, giant sandstorm frozen in mid-air like a wall, tiny travelers with a wagon in the foreground"},
+    {"id": "S3-2", "style": "A", "ratio": "16:9", "face": false, "motion": "pan", "prompt": "drying oasis, hyenas, hyena-headed warriors, fighting over the last water"},
+    {"id": "S4-1", "style": "C", "ratio": "9:16", "face": false, "motion": "tilt", "prompt": "temple with dragon scale roof tiles above a misty swamp, from below, goddess statue at the gate, face covered by black cloth"},
+    {"id": "S4-2", "style": "B", "ratio": "9:16", "face": false, "motion": "zoom", "prompt": "silhouettes of lizardfolk priests kneeling, grey star crown emblem, candlelit temple hall"},
+    {"id": "S5-1", "style": "C", "ratio": "16:9", "face": false, "motion": "animatediff", "prompt": "inside a volcanic crater, rivers of lava, black obsidian throne on a rock island, heat haze"},
+    {"id": "S5-2", "style": "B", "ratio": "9:16", "face": true, "motion": "zoom", "prompt": "dark armored warlord, burning crown, cold smile, floating embers, upper body"},
+    {"id": "S6-1", "style": "C", "ratio": "16:9", "face": false, "motion": "pan", "prompt": "sky like an endless sea, frozen stars, broken fragments of an ancient seal floating, deep blue and silver, stillness"},
+    {"id": "S6-2", "style": "B", "ratio": "9:16", "face": false, "motion": "zoom", "prompt": "[KING], standing on floating seal fragments, frozen sea of stars, front view, half face in shadow, one hand raised"},
+
+    {"id": "E1", "style": "A", "ratio": "16:9", "face": false, "motion": "animatediff", "prompt": "ancient forest coming back to life, falling leaves, birds flying, warm sunlight through the trees"},
+    {"id": "E2", "style": "A", "ratio": "16:9", "face": false, "motion": "pan", "prompt": "peaceful crystal cave, glowing blue crystals, closing eyes in the darkness"},
+    {"id": "E3", "style": "A", "ratio": "16:9", "face": false, "motion": "animatediff", "prompt": "rain falling on the desert, oasis filling with water, rainbow, flowing sand"},
+    {"id": "E4", "style": "C", "ratio": "9:16", "face": false, "motion": "tilt", "prompt": "goddess statue at a dragon scale temple, black cloth blowing away in the wind, light from her eyes, from below"},
+    {"id": "E5", "style": "C", "ratio": "16:9", "face": false, "motion": "tilt", "prompt": "cooled volcano, black ground with green sprouts, collapsed obsidian throne, cracked sea of stars in the sky"},
+
+    {"id": "N1", "style": "B", "ratio": "9:16", "face": false, "motion": "zoom", "prompt": "[KING], kneeling, cracking crown, single tear of light"},
+    {"id": "N2", "style": "C", "ratio": "16:9", "face": false, "motion": "animatediff", "prompt": "sea of stars, frozen stars flowing again like a river of light"},
+    {"id": "N3", "style": "A", "ratio": "9:16", "face": false, "motion": "zoom", "prompt": "[REEL MASTER], [ORIGIN SLOT], blazing pink heart light filling the frame"},
+    {"id": "N4", "style": "C", "ratio": "16:9", "face": false, "motion": "animatediff", "prompt": "pillar of light rising from a golden relic into the sky, golden fragments gathering into a colossal golden gear"},
+    {"id": "N5", "style": "A", "ratio": "21:9", "face": false, "motion": "pan", "prompt": "wide panorama, forest, crystal cave, desert dunes, swamp temple, volcano, vivid colors"},
+    {"id": "N6", "style": "A", "ratio": "9:16", "face": true, "motion": "zoom", "prompt": "[LUMI], laughing, tears in eyes, sunset light, upper body"},
+    {"id": "N7", "style": "A", "ratio": "16:9", "face": false, "motion": "animatediff", "prompt": "hill at sunset, countless small spirits turning into light particles rising to the sky, [REEL MASTER] waving, [ORIGIN SLOT]"},
+
+    {"id": "T1", "style": "B", "ratio": "9:16", "face": true, "motion": "zoom", "prompt": "crown of frozen starlight falling away, [FIRST HERO], exhausted face, half-closed eyes"},
+    {"id": "T2", "style": "A", "ratio": "16:9", "face": false, "motion": "pan", "prompt": "faded colors, flashback, [FIRST HERO], laughing with companions, goddess of light, sunny meadow"},
+    {"id": "T3", "style": "A", "ratio": "16:9", "face": false, "motion": "animatediff", "prompt": "faded colors, flashback, battlefield at dusk, rain, [FIRST HERO], holding a fallen companion, golden wheel turning in the sky"},
+    {"id": "T4", "style": "B", "ratio": "9:16", "face": false, "motion": "zoom", "prompt": "faded colors, flashback, [FIRST HERO], reaching toward a giant wheel in the sky, fingers turning into grey stone, desperate expression"},
+    {"id": "T5", "style": "A", "ratio": "9:16", "face": false, "motion": "zoom", "prompt": "close-up of two hands, brass gauntlet holding a grey stone armored hand, color returning"},
+    {"id": "T6", "style": "C", "ratio": "9:16", "face": false, "motion": "tilt", "prompt": "[LUMEN], opening eyes, center of a colossal golden wheel, from below, radiant light"},
+    {"id": "T7", "style": "A", "ratio": "9:16", "face": false, "motion": "animatediff", "prompt": "[FIRST HERO], dissolving into golden light particles, gentle smile"},
+    {"id": "T8", "style": "C", "ratio": "16:9", "face": false, "motion": "animatediff", "prompt": "(giant golden gear turning in the sky:1.4), morning sun rising over the continent, green land, light rays"},
+    {"id": "T9", "style": "A", "ratio": "9:16", "face": false, "motion": "zoom", "prompt": "[LUMI], [REEL MASTER], pulling the lever of [ORIGIN SLOT] together, spinning reels, sparkles"}
+  ]
+}
