@@ -4344,19 +4344,22 @@
     }
     let promoQ = [];
     let absTapT = 0;
-    function mergeFx(food, keep) { // 재료 자리 → 대상 자리로 날아가 합쳐짐 (그리기는 다음 화면에서)
+    let mgBusy = 0;
+    const choiceOpen = () => { const c = document.getElementById('absorbChoice'); return !!(c && c.classList.contains('show')); };
+    function mergeFx(food, keep) { // 재료는 제자리에 남아 있다가(전직 루트를 고르는 중이면 고른 뒤) 대상에게 빨려 들어감
       try {
         const host = field, h = host.getBoundingClientRect(), pos = u => { const i = G.units.indexOf(u), j = G.bench.indexOf(u);
           const a = i >= 0 ? document.querySelector(`#allyField .actor[data-i="${i}"] .ico`) : j >= 0 ? document.querySelector(`#allyField .actor[data-i="${100 + j}"] .ico`) : null;
           return a && a.getBoundingClientRect(); };
         const r0 = pos(food); if (!r0 || !r0.width) return;
         const img = clsArt(food) || ART[food.name], d = Math.random() * 120;
-        setTimeout(() => {
-          const r1 = pos(keep); if (!r1) return;
-          const g = document.createElement('div'); g.className = 'mg-ghost';
-          g.style.left = (r0.left - h.left) + 'px'; g.style.top = (r0.top - h.top) + 'px'; g.style.width = r0.width + 'px'; g.style.height = r0.height + 'px';
-          g.innerHTML = img ? `<img src="${img}" alt="">` : `<span>${food.icon}</span>`;
-          host.appendChild(g);
+        const g = document.createElement('div'); g.className = 'mg-ghost';
+        g.style.left = (r0.left - h.left) + 'px'; g.style.top = (r0.top - h.top) + 'px'; g.style.width = r0.width + 'px'; g.style.height = r0.height + 'px';
+        g.innerHTML = img ? `<img src="${img}" alt="">` : `<span>${food.icon}</span>`;
+        host.appendChild(g); mgBusy++;
+        const fly = () => {
+          if (choiceOpen()) return setTimeout(fly, 120); // 전직 루트 창이 닫힐 때까지 대기
+          const r1 = pos(keep); if (!r1) { g.remove(); mgBusy = Math.max(0, mgBusy - 1); return; }
           const dx = (r1.left + r1.width / 2) - (r0.left + r0.width / 2), dy = (r1.top + r1.height / 2) - (r0.top + r0.height / 2);
           const an = g.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1, filter: 'brightness(1)' },
             { transform: `translate(${dx * .15}px,${dy * .15 - 26}px) scale(1.08)`, opacity: 1, filter: 'brightness(2.6) drop-shadow(0 0 10px #f472b6)', offset: .3 },
@@ -4365,8 +4368,11 @@
             const b = document.createElement('div'); b.className = 'mg-pop'; b.style.left = (r1.left + r1.width / 2 - h.left) + 'px'; b.style.top = (r1.top + r1.height / 2 - h.top) + 'px'; b.innerHTML = '<i></i><i></i>';
             host.appendChild(b); setTimeout(() => b.remove(), 650);
             const i = G.units.indexOf(keep), el = i >= 0 && document.querySelector(`#allyField .actor[data-i="${i}"] .ico`);
-            if (el) el.animate([{ transform: 'scale(1.3)', filter: 'brightness(2.5)' }, { transform: 'scale(.95)', filter: 'brightness(1.3)', offset: .5 }, { transform: 'scale(1)', filter: 'brightness(1)' }], { duration: 420, easing: 'ease-out', composite: 'add' }); };
-        }, 30 + d);
+            if (el) el.animate([{ transform: 'scale(1.3)', filter: 'brightness(2.5)' }, { transform: 'scale(.95)', filter: 'brightness(1.3)', offset: .5 }, { transform: 'scale(1)', filter: 'brightness(1)' }], { duration: 420, easing: 'ease-out', composite: 'add' });
+            setTimeout(() => { mgBusy = Math.max(0, mgBusy - 1); }, 250); };
+        };
+        setTimeout(fly, 60 + d);
+        setTimeout(() => { if (g.isConnected && !choiceOpen()) { g.remove(); mgBusy = 0; } }, 15000); // 안전장치
       } catch (e) {}
     }
     let absFxBusy = false;
@@ -4425,7 +4431,8 @@
         xfPend.push({ u, i, st: k.endsWith('3') ? 3 : 2 });
       });
       if (!xfPend.length) return;
-      clearTimeout(xfT); xfT = setTimeout(() => { // 같은 순간 바뀐 유닛을 한 번에 처리
+      clearTimeout(xfT); xfT = setTimeout(function run() { // 같은 순간 바뀐 유닛을 한 번에 처리 (흡수 합체 연출·전직 루트 창이 끝난 뒤)
+        if ((typeof mgBusy !== 'undefined' && mgBusy > 0) || choiceOpen()) { xfT = setTimeout(run, 100); return; }
         const b = xfPend; xfPend = [];
         b.forEach(o => { const i = G.units.indexOf(o.u); xfField(o.u, i < 0 ? o.i : i); });
         try { SFX.absorb && SFX.absorb(true); } catch (e) {}
