@@ -1518,6 +1518,11 @@
     .mg-pop i + i { border-width: 0; background: radial-gradient(circle, #fff, rgba(244,114,182,.6) 40%, transparent 70%); animation: mgFlash .45s ease-out forwards; }
     @keyframes mgRing { from { transform: scale(.2); opacity: 1; } to { transform: scale(1.7); opacity: 0; } }
     @keyframes mgFlash { from { transform: scale(.5); opacity: 1; } to { transform: scale(1.4); opacity: 0; } }
+
+    .t-menu.has-cont { flex-direction: column !important; flex-wrap: nowrap !important; }
+    .t-menu.has-cont #tPlay { display: none !important; }
+    .t-menu.has-cont .t-cont { flex-basis: auto; width: min(72%, 300px); }
+    .t-menu.has-cont .t-opt { width: min(56%, 230px) !important; }
 </style>
   <style>
     /* ========== 컷신 (오프닝 · 엔딩) — 그림·영상은 게임 파일 옆 cutscenes 폴더에서 불러옴 ========== */
